@@ -342,3 +342,6 @@ yarn-error.log*
 # Native image (GraalVM)
 **/target/*-runner
 **/target/*-runner.exe
+
+
+skills/
