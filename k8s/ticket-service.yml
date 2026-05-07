@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: booking-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+    spec:
+      containers:
+        - name: ticket-service
+          image: 
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          env:
+            - name: DB_URL
+              value: jdbc:postgresql://postgres:5432/ticket_db
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              value: postgres
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-service
+  namespace: booking-system
+spec:
+  selector:
+    app: ticket-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+

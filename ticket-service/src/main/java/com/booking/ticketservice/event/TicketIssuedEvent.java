@@ -1,0 +1,1 @@
+package com.booking.ticketservice.event; public class TicketIssuedEvent { public Long ticketId; public Long userId; public String ticketCode; public Long bookingId; public Long passengerId; public Long flightId; public String status; }

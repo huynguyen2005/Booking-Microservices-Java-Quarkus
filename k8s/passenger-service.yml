@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: passenger-service
+  namespace: booking-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: passenger-service
+  template:
+    metadata:
+      labels:
+        app: passenger-service
+    spec:
+      containers:
+        - name: passenger-service
+          image: 
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: DB_URL
+              value: jdbc:postgresql://postgres:5432/passenger_db
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              value: postgres
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: passenger-service
+  namespace: booking-system
+spec:
+  selector:
+    app: passenger-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+

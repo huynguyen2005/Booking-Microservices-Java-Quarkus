@@ -1,0 +1,344 @@
+# =============================================================================
+# .gitignore - Booking Microservices Java Quarkus
+# Production-ready configuration
+# =============================================================================
+
+
+# =============================================================================
+# BUILD OUTPUT & COMPILED FILES
+# =============================================================================
+
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Quarkus specific build output
+**/target/
+.quarkus/
+
+# Java compiled classes
+*.class
+
+# Java Archives
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven wrapper
+!.mvn/
+
+# Gradle (if ever needed)
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+
+# =============================================================================
+# ENVIRONMENT & SECRETS (CRITICAL - Never commit!)
+# =============================================================================
+
+# Environment variable files
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+
+# Application secrets
+application-secret.yml
+application-secret.yaml
+application-secret.properties
+*-secret.yml
+*-secret.yaml
+*-secret.properties
+
+# Local configuration overrides
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# JWT keys
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.truststore
+private_key*
+public_key*
+jwt-private.pem
+jwt-public.pem
+
+# Cloudinary credentials (use .env instead)
+cloudinary.properties
+
+# Database credentials
+database.properties
+db-credentials*
+
+
+# =============================================================================
+# IDE & EDITOR FILES
+# =============================================================================
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.idea_modules/
+
+# Eclipse
+.eclipse/
+.classpath
+.project
+.settings/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.template
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.#*
+
+# JetBrains generic
+*.iml
+.idea/
+
+
+# =============================================================================
+# LOGS & DIAGNOSTIC FILES
+# =============================================================================
+
+# Log files
+*.log
+*.log.*
+logs/
+log/
+
+# Quarkus logs
+quarkus.log
+quarkus-*.log
+
+# GC logs
+gc.log
+gc-*.log
+
+# Heap dumps
+*.hprof
+
+# Thread dumps
+*.tdump
+
+# JVM crash files
+hs_err_pid*
+replay_pid*
+
+
+# =============================================================================
+# OPERATING SYSTEM FILES
+# =============================================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# =============================================================================
+# TESTING & COVERAGE
+# =============================================================================
+
+# Test reports (generated, not source)
+**/target/surefire-reports/
+**/target/failsafe-reports/
+
+# Code coverage reports
+**/target/jacoco.exec
+coverage/
+*.exec
+
+# TestContainers
+.testcontainers.properties
+
+
+# =============================================================================
+# DOCKER (Keep Dockerfile & docker-compose.yml!)
+# =============================================================================
+
+# DO NOT ignore: Dockerfile, docker-compose.yml, docker-compose*.yml, .dockerignore
+
+# Docker local override files (with secrets)
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.secrets.yml
+
+# Docker volumes mounted locally
+docker-volumes/
+docker-data/
+
+
+# =============================================================================
+# KUBERNETES (Keep k8s/ manifests!)
+# =============================================================================
+
+# DO NOT ignore: k8s/, kubernetes/, helm/
+
+# Local kubeconfig overrides
+kubeconfig.local
+kubeconfig.*.local
+*.kubeconfig
+
+# Helm generated charts (keep Chart.yaml and templates)
+charts/*.tgz
+
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+
+# PostgreSQL local data
+pgdata/
+postgres-data/
+*.sql.backup
+
+# H2 embedded database (for tests)
+*.db
+*.mv.db
+*.trace.db
+
+# Flyway / Liquibase undo scripts (keep versioned migrations)
+**/db/migration/*-UNDO.*
+
+
+# =============================================================================
+# MESSAGE BROKER
+# =============================================================================
+
+# RabbitMQ local data
+rabbitmq-data/
+rabbitmq-logs/
+mnesia/
+
+
+# =============================================================================
+# DEPENDENCY MANAGEMENT
+# =============================================================================
+
+# Maven local repository cache (not needed in repo)
+.m2/
+repository/
+
+
+# =============================================================================
+# GENERATED CODE & DOCUMENTATION
+# =============================================================================
+
+# Quarkus generated code
+.quarkus/
+src/main/generated/
+
+# OpenAPI / Swagger generated clients
+**/generated-sources/
+**/generated-test-sources/
+
+# JavaDoc
+**/target/site/
+
+# Annotation processors output
+**/target/generated-sources/
+**/target/generated-test-sources/
+
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Patch files
+*.orig
+*.rej
+*.patch
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Backup files
+*.bak
+*.backup
+
+# NPM (if any tooling scripts exist)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# SonarQube analysis
+.sonar/
+.scannerwork/
+
+# JaCoCo HTML report
+**/target/site/jacoco/
+
+# Native image (GraalVM)
+**/target/*-runner
+**/target/*-runner.exe

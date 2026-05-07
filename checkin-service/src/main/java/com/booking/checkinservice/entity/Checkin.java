@@ -1,0 +1,1 @@
+package com.booking.checkinservice.entity; import io.quarkus.hibernate.orm.panache.PanacheEntity; import jakarta.persistence.Entity; @Entity public class Checkin extends PanacheEntity { public Long userId; public String ticketCode; public String status; public Long bookingId; public Long passengerId; public Long flightId; }

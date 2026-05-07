@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: booking-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+          volumeMounts:
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-sql
+          configMap:
+            name: postgres-init
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: booking-system
+data:
+  init.sql: |
+    CREATE DATABASE flight_db;
+    CREATE DATABASE passenger_db;
+    CREATE DATABASE booking_db;
+    CREATE DATABASE payment_db;
+    CREATE DATABASE ticket_db;
+    CREATE DATABASE user_db;
+    CREATE DATABASE checkin_db;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: booking-system
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

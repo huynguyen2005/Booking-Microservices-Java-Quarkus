@@ -1,0 +1,299 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: booking-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployments/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - booking-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: booking-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - booking-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      flight-service:
+        condition: service_healthy
+      passenger-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      ticket-service:
+        condition: service_healthy
+      checkin-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    ports: ["8080:8080"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      GATEWAY_USER_SERVICE_URL: http://user-service:8088
+      GATEWAY_FLIGHT_SERVICE_URL: http://flight-service:8081
+      GATEWAY_PASSENGER_SERVICE_URL: http://passenger-service:8082
+      GATEWAY_BOOKING_SERVICE_URL: http://booking-service:8083
+      GATEWAY_PAYMENT_SERVICE_URL: http://payment-service:8084
+      GATEWAY_TICKET_SERVICE_URL: http://ticket-service:8085
+      GATEWAY_CHECKIN_SERVICE_URL: http://checkin-service:8087
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [booking-network]
+
+  flight-service:
+    build: { context: ., dockerfile: flight-service/Dockerfile }
+    container_name: flight-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports: ["8081:8081"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/flight_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  passenger-service:
+    build: { context: ., dockerfile: passenger-service/Dockerfile }
+    container_name: passenger-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports: ["8082:8082"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/passenger_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  booking-service:
+    build: { context: ., dockerfile: booking-service/Dockerfile }
+    container_name: booking-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      flight-service:
+        condition: service_healthy
+      passenger-service:
+        condition: service_healthy
+    ports: ["8083:8083"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/booking_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      FLIGHT_SERVICE_URL: http://flight-service:8081
+      PASSENGER_SERVICE_URL: http://passenger-service:8082
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  payment-service:
+    build: { context: ., dockerfile: payment-service/Dockerfile }
+    container_name: payment-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+    ports: ["8084:8084"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/payment_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  ticket-service:
+    build: { context: ., dockerfile: ticket-service/Dockerfile }
+    container_name: ticket-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    ports: ["8085:8085"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/ticket_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8085/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  notification-service:
+    build: { context: ., dockerfile: notification-service/Dockerfile }
+    container_name: notification-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports: ["8086:8086"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8086/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  checkin-service:
+    build: { context: ., dockerfile: checkin-service/Dockerfile }
+    container_name: checkin-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      ticket-service:
+        condition: service_healthy
+    ports: ["8087:8087"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/checkin_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      TICKET_SERVICE_URL: http://ticket-service:8085
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8087/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+  user-service:
+    build: { context: ., dockerfile: user-service/Dockerfile }
+    container_name: user-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      flight-service:
+        condition: service_healthy
+      passenger-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      ticket-service:
+        condition: service_healthy
+      checkin-service:
+        condition: service_healthy
+    ports: ["8088:8088"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/user_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      FLIGHT_SERVICE_URL: http://flight-service:8081
+      PASSENGER_SERVICE_URL: http://passenger-service:8082
+      BOOKING_SERVICE_URL: http://booking-service:8083
+      PAYMENT_SERVICE_URL: http://payment-service:8084
+      TICKET_SERVICE_URL: http://ticket-service:8085
+      CHECKIN_SERVICE_URL: http://checkin-service:8087
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8088/q/swagger-ui/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [booking-network]
+
+networks:
+  booking-network:
+    name: booking-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

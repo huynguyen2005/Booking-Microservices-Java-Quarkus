@@ -1,0 +1,7 @@
+CREATE DATABASE flight_db;
+CREATE DATABASE passenger_db;
+CREATE DATABASE booking_db;
+CREATE DATABASE payment_db;
+CREATE DATABASE ticket_db;
+CREATE DATABASE user_db;
+CREATE DATABASE checkin_db;
