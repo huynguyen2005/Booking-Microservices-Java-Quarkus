@@ -2,13 +2,16 @@ package com.booking.flightservice.resource;
 
 import com.booking.flightservice.dto.ImageUploadForm;
 import com.booking.flightservice.dto.ImageUploadResponse;
+import com.booking.flightservice.dto.FlightSearchResponse;
 import com.booking.flightservice.entity.Airplane;
 import com.booking.flightservice.entity.Airport;
 import com.booking.flightservice.entity.Flight;
 import com.booking.flightservice.entity.Seat;
 import com.booking.flightservice.service.CloudinaryUploadService;
 import com.booking.flightservice.service.FlightCacheService;
+import com.booking.flightservice.service.FlightSearchService;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.transaction.Transactional;
@@ -27,6 +30,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -40,10 +44,19 @@ public class FlightResource {
 
     private final CloudinaryUploadService cloudinaryUploadService;
     private final FlightCacheService flightCacheService;
+    private final FlightSearchService flightSearchService;
+    private final SecurityIdentity securityIdentity;
 
-    public FlightResource(CloudinaryUploadService cloudinaryUploadService, FlightCacheService flightCacheService) {
+    public FlightResource(
+            CloudinaryUploadService cloudinaryUploadService,
+            FlightCacheService flightCacheService,
+            FlightSearchService flightSearchService,
+            SecurityIdentity securityIdentity
+    ) {
         this.cloudinaryUploadService = cloudinaryUploadService;
         this.flightCacheService = flightCacheService;
+        this.flightSearchService = flightSearchService;
+        this.securityIdentity = securityIdentity;
     }
 
     @GET
@@ -51,6 +64,17 @@ public class FlightResource {
     @PermitAll
     public List<Airport> airports() {
         return flightCacheService.airports(() -> Airport.listAll());
+    }
+
+    @GET
+    @Path("/airports/search")
+    @PermitAll
+    public List<Airport> searchAirports(@QueryParam("keyword") String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return Airport.listAll();
+        }
+        String like = "%" + keyword.trim().toLowerCase() + "%";
+        return Airport.find("lower(code) like ?1 or lower(name) like ?1 or lower(city) like ?1", like).list();
     }
 
     @POST
@@ -112,6 +136,17 @@ public class FlightResource {
     @PermitAll
     public List<Airplane> airplanes() {
         return flightCacheService.airplanes(() -> Airplane.listAll());
+    }
+
+    @GET
+    @Path("/airplanes/search")
+    @PermitAll
+    public List<Airplane> searchAirplanes(@QueryParam("keyword") String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return Airplane.listAll();
+        }
+        String like = "%" + keyword.trim().toLowerCase() + "%";
+        return Airplane.find("lower(code) like ?1 or lower(model) like ?1", like).list();
     }
 
     @POST
@@ -189,6 +224,7 @@ public class FlightResource {
     public Flight addFlight(Flight x) {
         x.persist();
         flightCacheService.invalidateFlightCache(null);
+        flightSearchService.indexFlight(x);
         return x;
     }
 
@@ -224,6 +260,7 @@ public class FlightResource {
         flight.arrivalTime = input.arrivalTime;
         flight.status = input.status;
         flightCacheService.invalidateFlightCache(id);
+        flightSearchService.indexFlight(flight);
         return flight;
     }
 
@@ -238,13 +275,68 @@ public class FlightResource {
         }
         flight.delete();
         flightCacheService.invalidateFlightCache(id);
+        flightSearchService.deleteFlight(id);
+    }
+
+    @GET
+    @Path("/flights/search")
+    @PermitAll
+    public FlightSearchResponse searchFlights(
+            @QueryParam("keyword") String keyword,
+            @QueryParam("departureAirportId") Long departureAirportId,
+            @QueryParam("arrivalAirportId") Long arrivalAirportId,
+            @QueryParam("airplaneId") Long airplaneId,
+            @QueryParam("status") String status,
+            @QueryParam("departureFrom") String departureFrom,
+            @QueryParam("departureTo") String departureTo,
+            @QueryParam("page") Integer page,
+            @QueryParam("size") Integer size,
+            @QueryParam("sortBy") String sortBy,
+            @QueryParam("sortDir") String sortDir
+    ) {
+        boolean isAdmin = securityIdentity != null && securityIdentity.hasRole("ADMIN");
+        return flightSearchService.search(
+                keyword,
+                departureAirportId,
+                arrivalAirportId,
+                airplaneId,
+                status,
+                departureFrom,
+                departureTo,
+                page == null ? 0 : page,
+                size == null ? 10 : size,
+                sortBy,
+                sortDir,
+                isAdmin
+        );
     }
 
     @GET
     @Path("/seats")
     @RolesAllowed({"USER", "ADMIN"})
-    public List<Seat> seats(@QueryParam("flightId") Long flightId) {
-        return flightId == null ? Seat.listAll() : Seat.list("flightId", flightId);
+    public List<Seat> seats(
+            @QueryParam("flightId") Long flightId,
+            @QueryParam("seatNumber") String seatNumber,
+            @QueryParam("booked") Boolean booked
+    ) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+        if (flightId != null) {
+            clauses.add("flightId = ?" + (params.size() + 1));
+            params.add(flightId);
+        }
+        if (seatNumber != null && !seatNumber.isBlank()) {
+            clauses.add("upper(seatNumber) like ?" + (params.size() + 1));
+            params.add("%" + seatNumber.trim().toUpperCase() + "%");
+        }
+        if (booked != null) {
+            clauses.add("booked = ?" + (params.size() + 1));
+            params.add(booked);
+        }
+        if (clauses.isEmpty()) {
+            return Seat.listAll();
+        }
+        return Seat.find(String.join(" and ", clauses), params.toArray()).list();
     }
 
     @POST

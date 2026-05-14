@@ -43,9 +43,9 @@ export interface Airplane {
 
 export interface Flight {
   id: number;
-  departureAirportId: number | null;
-  arrivalAirportId: number | null;
-  airplaneId: number | null;
+  departureAirportId: number;
+  arrivalAirportId: number;
+  airplaneId: number;
   flightNumber: string | null;
   departureTime: string | null;
   arrivalTime: string | null;
@@ -55,8 +55,8 @@ export interface Flight {
 
 export interface Seat {
   id: number;
-  flightId: number | null;
-  seatNumber: string | null;
+  flightId: number;
+  seatNumber: string;
   booked: boolean;
 }
 
@@ -67,6 +67,7 @@ export interface Booking {
   flightId: number;
   seatNumber: string;
   status: string;
+  bookingCode?: string;
 }
 
 export interface Payment {
@@ -250,6 +251,8 @@ export const paymentApi = {
   getAllPayments: () => http.get<Payment[]>('/api/payments').then(r => r.data),
   getMyPayments: () => http.get<Payment[]>('/api/payments/me').then(r => r.data),
   getByBooking: (bookingId: number) => http.get<Payment>(`/api/payments/booking/${bookingId}`).then(r => r.data),
+  simulateSuccess: (id: number) => http.post<Payment>(`/api/payments/${id}/simulate-success`).then(r => r.data),
+  simulateFail: (id: number) => http.post<Payment>(`/api/payments/${id}/simulate-fail`).then(r => r.data),
   pay: (id: number) => http.put<Payment>(`/api/payments/${id}/pay`).then(r => r.data),
   fail: (id: number) => http.put<Payment>(`/api/payments/${id}/fail`).then(r => r.data),
 };

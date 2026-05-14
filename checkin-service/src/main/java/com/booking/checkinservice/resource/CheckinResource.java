@@ -15,6 +15,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -23,6 +24,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import java.util.ArrayList;
+import java.util.List;
 
 @Path("/api/checkins")
 @Produces(MediaType.APPLICATION_JSON)
@@ -64,6 +67,40 @@ public class CheckinResource {
         Checkin checkin = Checkin.find("ticketCode",ticketCode).firstResult();
         assertOwnership(checkin);
         return checkin;
+    }
+
+    @GET
+    @Path("/search")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Checkin> search(
+            @QueryParam("ticketCode") String ticketCode,
+            @QueryParam("status") String status,
+            @QueryParam("flightId") Long flightId
+    ) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (ticketCode != null && !ticketCode.isBlank()) {
+            clauses.add("lower(ticketCode) like ?" + (params.size() + 1));
+            params.add("%" + ticketCode.trim().toLowerCase() + "%");
+        }
+        if (status != null && !status.isBlank()) {
+            clauses.add("upper(status) = ?" + (params.size() + 1));
+            params.add(status.trim().toUpperCase());
+        }
+        if (flightId != null) {
+            clauses.add("flightId = ?" + (params.size() + 1));
+            params.add(flightId);
+        }
+        if (!jwt.getGroups().contains("ADMIN")) {
+            clauses.add("userId = ?" + (params.size() + 1));
+            params.add(currentUserId());
+        }
+
+        if (clauses.isEmpty()) {
+            return jwt.getGroups().contains("ADMIN") ? Checkin.listAll() : Checkin.list("userId", currentUserId());
+        }
+        return Checkin.find(String.join(" and ", clauses), params.toArray()).list();
     }
 
     private void assertOwnership(TicketView ticket) {

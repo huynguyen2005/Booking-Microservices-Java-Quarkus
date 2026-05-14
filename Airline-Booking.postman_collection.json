@@ -1,715 +1,1143 @@
 ﻿{
-  "info": {
-    "_postman_id": "8b624489-6c84-4a3d-a007-6d2f8e2ef7e8",
-    "name": "Airline Booking Microservices",
-    "description": "Postman Collection for Booking Microservices Java Quarkus via API Gateway (http://localhost:8080).",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register User",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Nguyen Van User\",\n  \"email\": \"user1@gmail.com\",\n  \"password\": \"123456\",\n  \"phone\": \"0912345678\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/register",
-            "description": "Register a normal USER account."
-          }
-        },
-        {
-          "name": "Login User (save userToken, userId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.token) pm.environment.set('userToken', json.token);",
-                "if (json.user && json.user.id) pm.environment.set('userId', json.user.id);"
+    "info":  {
+                 "_postman_id":  "8b624489-6c84-4a3d-a007-6d2f8e2ef7e8",
+                 "name":  "Airline Booking Microservices",
+                 "description":  "Postman Collection for Booking Microservices Java Quarkus via API Gateway (http://localhost:8080).",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Register User",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"fullName\": \"Nguyen Van User\",\n  \"email\": \"user1@gmail.com\",\n  \"password\": \"123456\",\n  \"phone\": \"0912345678\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/auth/register",
+                                                      "description":  "Register a normal USER account."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Login User (save userToken, userId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.token) pm.environment.set(\u0027userToken\u0027, json.token);",
+                                                                                    "if (json.user \u0026\u0026 json.user.id) pm.environment.set(\u0027userId\u0027, json.user.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"user1@gmail.com\",\n  \"password\": \"123456\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/auth/login",
+                                                      "description":  "Login USER and store user token/id in environment."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Login Admin (save adminToken)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.token) pm.environment.set(\u0027adminToken\u0027, json.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"admin123\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/auth/login",
+                                                      "description":  "Login ADMIN and store admin token."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Auth Me (userToken)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/auth/me",
+                                                      "description":  "Get current USER profile."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Auth Me (adminToken)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/auth/me",
+                                                      "description":  "Get current ADMIN profile."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Users",
+                     "item":  [
+                                  {
+                                      "name":  "Get Users (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/users",
+                                                      "description":  "List users (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get User by ID (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/users/{{userId}}",
+                                                      "description":  "Get user by id (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Users (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/users/search?keyword=user\u0026role=USER",
+                                                      "description":  "Search users by keyword and role."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Airports",
+                     "item":  [
+                                  {
+                                      "name":  "Get Airports",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const arr = pm.response.json();",
+                                                                                    "if (Array.isArray(arr) \u0026\u0026 arr.length \u003e 0 \u0026\u0026 arr[0].id) pm.environment.set(\u0027airportId\u0027, arr[0].id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airports",
+                                                      "description":  "List airports and save first airportId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Airport (save airportId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027airportId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"code\": \"SGN\",\n  \"name\": \"Tan Son Nhat\",\n  \"city\": \"Ho Chi Minh\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airports",
+                                                      "description":  "Create airport and save airportId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Update Airport",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"code\": \"SGN\",\n  \"name\": \"Tan Son Nhat International\",\n  \"city\": \"Ho Chi Minh\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airports/{{airportId}}",
+                                                      "description":  "Update airport by airportId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Delete Airport",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airports/{{airportId}}",
+                                                      "description":  "Delete airport by airportId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Airports",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airports/search?keyword=sgn",
+                                                      "description":  "Search airports by code/name/city."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Airplanes",
+                     "item":  [
+                                  {
+                                      "name":  "Get Airplanes",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const arr = pm.response.json();",
+                                                                                    "if (Array.isArray(arr) \u0026\u0026 arr.length \u003e 0 \u0026\u0026 arr[0].id) pm.environment.set(\u0027airplaneId\u0027, arr[0].id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airplanes",
+                                                      "description":  "List airplanes and save first airplaneId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Airplane (save airplaneId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027airplaneId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"code\": \"VN-A321\",\n  \"model\": \"Airbus A321\",\n  \"totalSeats\": 180\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airplanes",
+                                                      "description":  "Create airplane and save airplaneId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Update Airplane",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"code\": \"VN-A321\",\n  \"model\": \"Airbus A321 Neo\",\n  \"totalSeats\": 186\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airplanes/{{airplaneId}}",
+                                                      "description":  "Update airplane by airplaneId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Delete Airplane",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airplanes/{{airplaneId}}",
+                                                      "description":  "Delete airplane by airplaneId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Airplanes",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/airplanes/search?keyword=airbus",
+                                                      "description":  "Search airplanes by code/model."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Flights",
+                     "item":  [
+                                  {
+                                      "name":  "Get Flights (save flightId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const arr = pm.response.json();",
+                                                                                    "if (Array.isArray(arr) \u0026\u0026 arr.length \u003e 0 \u0026\u0026 arr[0].id) pm.environment.set(\u0027flightId\u0027, arr[0].id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/flights",
+                                                      "description":  "List flights and save first flightId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Flight by ID",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/flights/{{flightId}}",
+                                                      "description":  "Get flight detail by id."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Flight (save flightId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027flightId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"departureAirportId\": {{airportId}},\n  \"arrivalAirportId\": {{airportId}},\n  \"airplaneId\": {{airplaneId}},\n  \"flightNumber\": \"VN100\",\n  \"departureTime\": \"2026-05-07T10:00:00\",\n  \"arrivalTime\": \"2026-05-07T12:00:00\",\n  \"status\": \"SCHEDULED\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/flights",
+                                                      "description":  "Create flight and save flightId. Requires airportId + airplaneId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Flights (User/Public)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/flights/search?keyword=VN\u0026departureAirportId={{airportId}}\u0026arrivalAirportId={{airportId}}\u0026departureFrom=2026-05-01T00:00:00\u0026departureTo=2026-12-31T23:59:59\u0026page=0\u0026size=10\u0026sortBy=departureTime\u0026sortDir=asc",
+                                                      "description":  "Search flights for public/user with filter + pagination + sort (Elasticsearch)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Flights (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/flights/search?keyword=VN\u0026status=SCHEDULED\u0026departureAirportId={{airportId}}\u0026arrivalAirportId={{airportId}}\u0026airplaneId={{airplaneId}}\u0026departureFrom=2026-05-01T00:00:00\u0026departureTo=2026-12-31T23:59:59\u0026page=0\u0026size=20\u0026sortBy=departureTime\u0026sortDir=desc",
+                                                      "description":  "Search flights with admin token using the same endpoint /api/flights/search."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Seats",
+                     "item":  [
+                                  {
+                                      "name":  "Get Seats",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/seats",
+                                                      "description":  "List all seats."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Seats by Flight",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/seats?flightId={{flightId}}",
+                                                      "description":  "List seats by flightId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Check Seat Availability",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/seats/availability?flightId={{flightId}}\u0026seatNumber=A1",
+                                                      "description":  "Check seat availability for a flight."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Seats (flightId/seatNumber/booked)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/seats?flightId={{flightId}}\u0026seatNumber=A\u0026booked=false",
+                                                      "description":  "Filter seats by flightId, seatNumber, booked."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Passengers",
+                     "item":  [
+                                  {
+                                      "name":  "Get Passengers Me",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/passengers/me",
+                                                      "description":  "Get current user passengers."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Create Passenger (save passengerId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027passengerId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"fullName\": \"Nguyen Van Passenger\",\n  \"passportNumber\": \"P1234567\",\n  \"dateOfBirth\": \"1999-01-01\",\n  \"gender\": \"MALE\",\n  \"phone\": \"0988888888\",\n  \"email\": \"pax1@gmail.com\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/passengers",
+                                                      "description":  "Create passenger and save passengerId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Passengers (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/passengers",
+                                                      "description":  "Get all passengers (ADMIN)."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Bookings",
+                     "item":  [
+                                  {
+                                      "name":  "Create Booking (save bookingId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027bookingId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"flightId\": {{flightId}},\n  \"passengerId\": {{passengerId}},\n  \"seatNumber\": \"A1\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/bookings",
+                                                      "description":  "Create booking and save bookingId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Bookings Me",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/bookings/me",
+                                                      "description":  "Get current user bookings."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Bookings (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/bookings",
+                                                      "description":  "Get all bookings (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Bookings",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/bookings/search?bookingId={{bookingId}}\u0026passengerId={{passengerId}}\u0026flightId={{flightId}}\u0026status=CREATED",
+                                                      "description":  "Search bookings by bookingId/passengerId/flightId/status."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Payments",
+                     "item":  [
+                                  {
+                                      "name":  "Get Payments Me",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/payments/me",
+                                                      "description":  "Get current user payments."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Payment by Booking (save paymentId)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "if (json.id) pm.environment.set(\u0027paymentId\u0027, json.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/payments/booking/{{bookingId}}",
+                                                      "description":  "Get payment by booking id and save paymentId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Pay Payment",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"method\": \"CASH\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/payments/{{paymentId}}/pay",
+                                                      "description":  "Pay payment by paymentId."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Payments (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/payments",
+                                                      "description":  "Get all payments (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Payments",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/payments/search?paymentId={{paymentId}}\u0026bookingId={{bookingId}}\u0026status=PENDING",
+                                                      "description":  "Search payments by paymentId/bookingId/status."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Tickets",
+                     "item":  [
+                                  {
+                                      "name":  "Get Tickets Me (save ticketCode)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const arr = pm.response.json();",
+                                                                                    "if (Array.isArray(arr) \u0026\u0026 arr.length \u003e 0 \u0026\u0026 arr[0].ticketCode) pm.environment.set(\u0027ticketCode\u0027, arr[0].ticketCode);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/tickets/me",
+                                                      "description":  "Get my tickets and save ticketCode."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Ticket by Code",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/tickets/code/{{ticketCode}}",
+                                                      "description":  "Get ticket detail by ticketCode."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Tickets (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/tickets",
+                                                      "description":  "Get all tickets (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Tickets",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/tickets/search?ticketCode=TKT\u0026status=ISSUED\u0026userId={{userId}}",
+                                                      "description":  "Search tickets by partial ticketCode/status/userId."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Checkins",
+                     "item":  [
+                                  {
+                                      "name":  "Create Checkin",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"ticketCode\": \"{{ticketCode}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/checkins",
+                                                      "description":  "Check-in by ticketCode."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Checkins Me",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/checkins/me",
+                                                      "description":  "Get current user check-ins."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Checkins (ADMIN)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/checkins",
+                                                      "description":  "Get all check-ins (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Search Checkins",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/checkins/search?ticketCode=TKT\u0026status=CHECKED_IN\u0026flightId={{flightId}}",
+                                                      "description":  "Search checkins by partial ticketCode/status/flightId."
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Cloudinary Upload",
+                     "item":  [
+                                  {
+                                      "name":  "Upload User Avatar",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/users/me/avatar",
+                                                      "description":  "Upload avatar for current user (jpg/png/webp \u003c= 5MB)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Upload Airport Image (ADMIN)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airports/{{airportId}}/image",
+                                                      "description":  "Upload airport image by id (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Upload Airplane Image (ADMIN)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airplanes/{{airplaneId}}/image",
+                                                      "description":  "Upload airplane image by id (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Upload Flight Image (ADMIN)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/flights/{{flightId}}/image",
+                                                      "description":  "Upload flight image by id (ADMIN)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Validation - Invalid Image Type (expect 400)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status is 400\u0027, function(){ pm.response.to.have.status(400); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/users/me/avatar",
+                                                      "description":  "Attach non-image file manually (e.g. .txt), expect 400."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Validation - Forbidden USER upload airport (expect 403)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status is 403\u0027, function(){ pm.response.to.have.status(403); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{userToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airports/{{airportId}}/image",
+                                                      "description":  "USER cannot upload airport image, expect 403."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Validation - Not Found airport image (expect 404)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status is 404\u0027, function(){ pm.response.to.have.status(404); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{adminToken}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "file",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/airports/999999999/image",
+                                                      "description":  "Upload to non-existing airport id, expect 404."
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "auth":  {
+                 "type":  "noauth"
+             },
+    "event":  [
+
               ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user1@gmail.com\",\n  \"password\": \"123456\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "Login USER and store user token/id in environment."
-          }
-        },
-        {
-          "name": "Login Admin (save adminToken)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.token) pm.environment.set('adminToken', json.token);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"admin123\"\n}"
-            },
-            "url": "{{baseUrl}}/api/auth/login",
-            "description": "Login ADMIN and store admin token."
-          }
-        },
-        {
-          "name": "Auth Me (userToken)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/auth/me",
-            "description": "Get current USER profile."
-          }
-        },
-        {
-          "name": "Auth Me (adminToken)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/auth/me",
-            "description": "Get current ADMIN profile."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Get Users (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/users",
-            "description": "List users (ADMIN)."
-          }
-        },
-        {
-          "name": "Get User by ID (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/users/{{userId}}",
-            "description": "Get user by id (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Airports",
-      "item": [
-        {
-          "name": "Get Airports",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const arr = pm.response.json();",
-                "if (Array.isArray(arr) && arr.length > 0 && arr[0].id) pm.environment.set('airportId', arr[0].id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/airports",
-            "description": "List airports and save first airportId."
-          }
-        },
-        {
-          "name": "Create Airport (save airportId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('airportId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"SGN\",\n  \"name\": \"Tan Son Nhat\",\n  \"city\": \"Ho Chi Minh\"\n}"
-            },
-            "url": "{{baseUrl}}/api/airports",
-            "description": "Create airport and save airportId."
-          }
-        },
-        {
-          "name": "Update Airport",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"SGN\",\n  \"name\": \"Tan Son Nhat International\",\n  \"city\": \"Ho Chi Minh\"\n}"
-            },
-            "url": "{{baseUrl}}/api/airports/{{airportId}}",
-            "description": "Update airport by airportId."
-          }
-        },
-        {
-          "name": "Delete Airport",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/airports/{{airportId}}",
-            "description": "Delete airport by airportId."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Airplanes",
-      "item": [
-        {
-          "name": "Get Airplanes",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const arr = pm.response.json();",
-                "if (Array.isArray(arr) && arr.length > 0 && arr[0].id) pm.environment.set('airplaneId', arr[0].id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/airplanes",
-            "description": "List airplanes and save first airplaneId."
-          }
-        },
-        {
-          "name": "Create Airplane (save airplaneId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('airplaneId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"VN-A321\",\n  \"model\": \"Airbus A321\",\n  \"totalSeats\": 180\n}"
-            },
-            "url": "{{baseUrl}}/api/airplanes",
-            "description": "Create airplane and save airplaneId."
-          }
-        },
-        {
-          "name": "Update Airplane",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"VN-A321\",\n  \"model\": \"Airbus A321 Neo\",\n  \"totalSeats\": 186\n}"
-            },
-            "url": "{{baseUrl}}/api/airplanes/{{airplaneId}}",
-            "description": "Update airplane by airplaneId."
-          }
-        },
-        {
-          "name": "Delete Airplane",
-          "request": {
-            "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/airplanes/{{airplaneId}}",
-            "description": "Delete airplane by airplaneId."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Flights",
-      "item": [
-        {
-          "name": "Get Flights (save flightId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const arr = pm.response.json();",
-                "if (Array.isArray(arr) && arr.length > 0 && arr[0].id) pm.environment.set('flightId', arr[0].id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/flights",
-            "description": "List flights and save first flightId."
-          }
-        },
-        {
-          "name": "Get Flight by ID",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/flights/{{flightId}}",
-            "description": "Get flight detail by id."
-          }
-        },
-        {
-          "name": "Create Flight (save flightId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('flightId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"departureAirportId\": {{airportId}},\n  \"arrivalAirportId\": {{airportId}},\n  \"airplaneId\": {{airplaneId}},\n  \"flightNumber\": \"VN100\",\n  \"departureTime\": \"2026-05-07T10:00:00\",\n  \"arrivalTime\": \"2026-05-07T12:00:00\",\n  \"status\": \"SCHEDULED\"\n}"
-            },
-            "url": "{{baseUrl}}/api/flights",
-            "description": "Create flight and save flightId. Requires airportId + airplaneId."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Seats",
-      "item": [
-        {
-          "name": "Get Seats",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/seats",
-            "description": "List all seats."
-          }
-        },
-        {
-          "name": "Get Seats by Flight",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/seats?flightId={{flightId}}",
-            "description": "List seats by flightId."
-          }
-        },
-        {
-          "name": "Check Seat Availability",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/seats/availability?flightId={{flightId}}&seatNumber=A1",
-            "description": "Check seat availability for a flight."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Passengers",
-      "item": [
-        {
-          "name": "Get Passengers Me",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/passengers/me",
-            "description": "Get current user passengers."
-          }
-        },
-        {
-          "name": "Create Passenger (save passengerId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('passengerId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{userToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Nguyen Van Passenger\",\n  \"passportNumber\": \"P1234567\",\n  \"dateOfBirth\": \"1999-01-01\",\n  \"gender\": \"MALE\",\n  \"phone\": \"0988888888\",\n  \"email\": \"pax1@gmail.com\"\n}"
-            },
-            "url": "{{baseUrl}}/api/passengers",
-            "description": "Create passenger and save passengerId."
-          }
-        },
-        {
-          "name": "Get Passengers (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/passengers",
-            "description": "Get all passengers (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Bookings",
-      "item": [
-        {
-          "name": "Create Booking (save bookingId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('bookingId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{userToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"flightId\": {{flightId}},\n  \"passengerId\": {{passengerId}},\n  \"seatNumber\": \"A1\"\n}"
-            },
-            "url": "{{baseUrl}}/api/bookings",
-            "description": "Create booking and save bookingId."
-          }
-        },
-        {
-          "name": "Get Bookings Me",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/bookings/me",
-            "description": "Get current user bookings."
-          }
-        },
-        {
-          "name": "Get Bookings (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/bookings",
-            "description": "Get all bookings (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Payments",
-      "item": [
-        {
-          "name": "Get Payments Me",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/payments/me",
-            "description": "Get current user payments."
-          }
-        },
-        {
-          "name": "Get Payment by Booking (save paymentId)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const json = pm.response.json();",
-                "if (json.id) pm.environment.set('paymentId', json.id);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/payments/booking/{{bookingId}}",
-            "description": "Get payment by booking id and save paymentId."
-          }
-        },
-        {
-          "name": "Pay Payment",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{userToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"method\": \"CASH\"\n}"
-            },
-            "url": "{{baseUrl}}/api/payments/{{paymentId}}/pay",
-            "description": "Pay payment by paymentId."
-          }
-        },
-        {
-          "name": "Get Payments (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/payments",
-            "description": "Get all payments (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tickets",
-      "item": [
-        {
-          "name": "Get Tickets Me (save ticketCode)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "const arr = pm.response.json();",
-                "if (Array.isArray(arr) && arr.length > 0 && arr[0].ticketCode) pm.environment.set('ticketCode', arr[0].ticketCode);"
-              ]
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/tickets/me",
-            "description": "Get my tickets and save ticketCode."
-          }
-        },
-        {
-          "name": "Get Ticket by Code",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/tickets/code/{{ticketCode}}",
-            "description": "Get ticket detail by ticketCode."
-          }
-        },
-        {
-          "name": "Get Tickets (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/tickets",
-            "description": "Get all tickets (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Checkins",
-      "item": [
-        {
-          "name": "Create Checkin",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{userToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"ticketCode\": \"{{ticketCode}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/checkins",
-            "description": "Check-in by ticketCode."
-          }
-        },
-        {
-          "name": "Get Checkins Me",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": "{{baseUrl}}/api/checkins/me",
-            "description": "Get current user check-ins."
-          }
-        },
-        {
-          "name": "Get Checkins (ADMIN)",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": "{{baseUrl}}/api/checkins",
-            "description": "Get all check-ins (ADMIN)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Cloudinary Upload",
-      "item": [
-        {
-          "name": "Upload User Avatar",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/users/me/avatar",
-            "description": "Upload avatar for current user (jpg/png/webp <= 5MB)."
-          }
-        },
-        {
-          "name": "Upload Airport Image (ADMIN)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/airports/{{airportId}}/image",
-            "description": "Upload airport image by id (ADMIN)."
-          }
-        },
-        {
-          "name": "Upload Airplane Image (ADMIN)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/airplanes/{{airplaneId}}/image",
-            "description": "Upload airplane image by id (ADMIN)."
-          }
-        },
-        {
-          "name": "Upload Flight Image (ADMIN)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/flights/{{flightId}}/image",
-            "description": "Upload flight image by id (ADMIN)."
-          }
-        },
-        {
-          "name": "Validation - Invalid Image Type (expect 400)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": ["pm.test('Status is 400', function(){ pm.response.to.have.status(400); });"]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/users/me/avatar",
-            "description": "Attach non-image file manually (e.g. .txt), expect 400."
-          }
-        },
-        {
-          "name": "Validation - Forbidden USER upload airport (expect 403)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": ["pm.test('Status is 403', function(){ pm.response.to.have.status(403); });"]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/airports/{{airportId}}/image",
-            "description": "USER cannot upload airport image, expect 403."
-          }
-        },
-        {
-          "name": "Validation - Not Found airport image (expect 404)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": ["pm.test('Status is 404', function(){ pm.response.to.have.status(404); });"]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "body": {
-              "mode": "formdata",
-              "formdata": [{ "key": "file", "type": "file", "src": "" }]
-            },
-            "url": "{{baseUrl}}/api/airports/999999999/image",
-            "description": "Upload to non-existing airport id, expect 404."
-          }
-        }
-      ]
-    }
-  ],
-  "auth": {
-    "type": "noauth"
-  },
-  "event": []
 }

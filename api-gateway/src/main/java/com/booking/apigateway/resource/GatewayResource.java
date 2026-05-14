@@ -229,7 +229,11 @@ public class GatewayResource {
         if (path.startsWith("api/auth") || path.startsWith("api/users") || path.startsWith("api/admin/dashboard")) {
             return "user";
         }
-        if (path.startsWith("api/airports") || path.startsWith("api/airplanes") || path.startsWith("api/flights") || path.startsWith("api/seats")) {
+        if (path.startsWith("api/airports")
+                || path.startsWith("api/airplanes")
+                || path.startsWith("api/flights")
+                || path.startsWith("api/seats")
+                || path.startsWith("api/admin/flights")) {
             return "flight";
         }
         if (path.startsWith("api/passengers")) {

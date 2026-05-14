@@ -17,6 +17,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -27,6 +28,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Path("/api/bookings")
 @Produces(MediaType.APPLICATION_JSON)
@@ -40,6 +42,44 @@ public class BookingResource {
     @Inject JsonWebToken jwt;
 
     @GET @RolesAllowed("ADMIN") public List<Booking> all(){ return Booking.listAll(); }
+
+    @GET
+    @Path("/search")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Booking> search(
+            @QueryParam("bookingId") Long bookingId,
+            @QueryParam("passengerId") Long passengerId,
+            @QueryParam("flightId") Long flightId,
+            @QueryParam("status") String status
+    ) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (bookingId != null) {
+            clauses.add("id = ?" + (params.size() + 1));
+            params.add(bookingId);
+        }
+        if (passengerId != null) {
+            clauses.add("passengerId = ?" + (params.size() + 1));
+            params.add(passengerId);
+        }
+        if (flightId != null) {
+            clauses.add("flightId = ?" + (params.size() + 1));
+            params.add(flightId);
+        }
+        if (status != null && !status.isBlank()) {
+            clauses.add("upper(status) = ?" + (params.size() + 1));
+            params.add(status.trim().toUpperCase());
+        }
+        if (!isAdmin()) {
+            clauses.add("userId = ?" + (params.size() + 1));
+            params.add(currentUserId());
+        }
+        if (clauses.isEmpty()) {
+            return isAdmin() ? Booking.listAll() : Booking.list("userId", currentUserId());
+        }
+        return Booking.find(String.join(" and ", clauses), params.toArray()).list();
+    }
 
     @GET
     @Path("/me")

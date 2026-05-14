@@ -11,10 +11,12 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Path("/api/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -55,6 +57,41 @@ public class TicketResource {
         Ticket ticket = Ticket.find("ticketCode",ticketCode).firstResult();
         assertOwnership(ticket);
         return ticket;
+    }
+
+    @GET
+    @Path("/search")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Ticket> search(
+            @QueryParam("ticketCode") String ticketCode,
+            @QueryParam("status") String status,
+            @QueryParam("userId") Long userId
+    ) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (ticketCode != null && !ticketCode.isBlank()) {
+            clauses.add("lower(ticketCode) like ?" + (params.size() + 1));
+            params.add("%" + ticketCode.trim().toLowerCase() + "%");
+        }
+        if (status != null && !status.isBlank()) {
+            clauses.add("upper(status) = ?" + (params.size() + 1));
+            params.add(status.trim().toUpperCase());
+        }
+        if (jwt.getGroups().contains("ADMIN")) {
+            if (userId != null) {
+                clauses.add("userId = ?" + (params.size() + 1));
+                params.add(userId);
+            }
+        } else {
+            clauses.add("userId = ?" + (params.size() + 1));
+            params.add(currentUserId());
+        }
+
+        if (clauses.isEmpty()) {
+            return jwt.getGroups().contains("ADMIN") ? Ticket.listAll() : Ticket.list("userId", currentUserId());
+        }
+        return Ticket.find(String.join(" and ", clauses), params.toArray()).list();
     }
 
     private void assertOwnership(List<Ticket> tickets) {

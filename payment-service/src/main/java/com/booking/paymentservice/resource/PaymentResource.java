@@ -11,16 +11,19 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Path("/api/payments")
 @Produces(MediaType.APPLICATION_JSON)
@@ -33,6 +36,40 @@ public class PaymentResource {
 
     @GET @RolesAllowed("ADMIN")
     public List<Payment> all() { return Payment.listAll(); }
+
+    @GET
+    @Path("/search")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Payment> search(
+            @QueryParam("paymentId") Long paymentId,
+            @QueryParam("bookingId") Long bookingId,
+            @QueryParam("status") String status
+    ) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (paymentId != null) {
+            clauses.add("id = ?" + (params.size() + 1));
+            params.add(paymentId);
+        }
+        if (bookingId != null) {
+            clauses.add("bookingId = ?" + (params.size() + 1));
+            params.add(bookingId);
+        }
+        if (status != null && !status.isBlank()) {
+            clauses.add("upper(status) = ?" + (params.size() + 1));
+            params.add(status.trim().toUpperCase());
+        }
+        if (!jwt.getGroups().contains("ADMIN")) {
+            clauses.add("userId = ?" + (params.size() + 1));
+            params.add(currentUserId());
+        }
+
+        if (clauses.isEmpty()) {
+            return jwt.getGroups().contains("ADMIN") ? Payment.listAll() : Payment.list("userId", currentUserId());
+        }
+        return Payment.find(String.join(" and ", clauses), params.toArray()).list();
+    }
 
     @GET @Path("/me") @RolesAllowed({"USER", "ADMIN"})
     public List<Payment> me() {
@@ -49,8 +86,8 @@ public class PaymentResource {
         return payment;
     }
 
-    @PUT @Path("/{id}/pay") @RolesAllowed({"USER", "ADMIN"})
-    public Payment pay(@PathParam("id") Long id) {
+    @POST @Path("/{id}/simulate-success") @RolesAllowed({"USER", "ADMIN"})
+    public Payment simulateSuccess(@PathParam("id") Long id) {
         Payment p = QuarkusTransaction.requiringNew().call(() -> {
             Payment found = Payment.findById(id);
             assertOwnership(found);
@@ -62,6 +99,22 @@ public class PaymentResource {
         PaymentCompletedEvent e = new PaymentCompletedEvent();
         e.paymentId = p.id; e.userId = p.userId; e.bookingId = p.bookingId; e.passengerId = p.passengerId; e.flightId = p.flightId; e.status = p.status;
         completed.send(e);
+        return p;
+    }
+
+    @POST @Path("/{id}/simulate-fail") @RolesAllowed({"USER", "ADMIN"})
+    public Payment simulateFail(@PathParam("id") Long id) {
+        Payment p = QuarkusTransaction.requiringNew().call(() -> {
+            Payment found = Payment.findById(id);
+            assertOwnership(found);
+            if (found == null) { throw new NotFoundException(); }
+            found.status = "FAILED";
+            found.persistAndFlush();
+            return found;
+        });
+        PaymentFailedEvent e = new PaymentFailedEvent();
+        e.paymentId = p.id; e.userId = p.userId; e.bookingId = p.bookingId; e.status = p.status;
+        failed.send(e);
         return p;
     }
 

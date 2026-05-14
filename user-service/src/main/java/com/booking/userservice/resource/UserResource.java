@@ -2,6 +2,7 @@ package com.booking.userservice.resource;
 
 import com.booking.userservice.dto.UpdateUserRequest;
 import com.booking.userservice.dto.UserResponse;
+import com.booking.userservice.entity.Role;
 import com.booking.userservice.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.transaction.Transactional;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
@@ -31,6 +33,15 @@ public class UserResource {
     @GET
     public List<UserResponse> all() {
         return userService.list();
+    }
+
+    @GET
+    @Path("/search")
+    public List<UserResponse> search(
+            @QueryParam("keyword") String keyword,
+            @QueryParam("role") Role role
+    ) {
+        return userService.search(keyword, role);
     }
 
     @GET

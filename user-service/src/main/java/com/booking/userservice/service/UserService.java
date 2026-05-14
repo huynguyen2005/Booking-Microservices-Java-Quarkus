@@ -17,6 +17,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @ApplicationScoped
 public class UserService {
@@ -73,6 +74,24 @@ public class UserService {
 
     public List<UserResponse> list() {
         return AppUser.listAll().stream().map(AppUser.class::cast).map(this::toResponse).toList();
+    }
+
+    public List<UserResponse> search(String keyword, Role role) {
+        List<String> clauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+        if (keyword != null && !keyword.isBlank()) {
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            clauses.add("(lower(fullName) like ?" + (params.size() + 1) + " or lower(email) like ?" + (params.size() + 1) + " or lower(phone) like ?" + (params.size() + 1) + ")");
+            params.add(like);
+        }
+        if (role != null) {
+            clauses.add("role = ?" + (params.size() + 1));
+            params.add(role);
+        }
+        List<AppUser> users = clauses.isEmpty()
+                ? AppUser.listAll()
+                : AppUser.find(String.join(" and ", clauses), params.toArray()).list();
+        return users.stream().map(this::toResponse).toList();
     }
 
     public UserResponse get(Long id) {

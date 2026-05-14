@@ -1,9 +1,9 @@
 ﻿# Booking Microservices Java Quarkus
 
-Hệ thống đặt vé máy bay theo kiến trúc microservices, xây dựng bằng **Java Quarkus**, sử dụng **PostgreSQL**, **RabbitMQ**, **Redis**, **JWT RBAC**, hỗ trợ chạy bằng **Docker Compose** và deploy trên **Kubernetes**.
+Hệ thống đặt vé máy bay theo kiến trúc microservices, xây dựng bằng **Java Quarkus**, sử dụng **PostgreSQL**, **RabbitMQ**, **Redis**, **Elasticsearch**, **JWT RBAC**, hỗ trợ chạy bằng **Docker Compose** và deploy trên **Kubernetes**.
 
 Mục tiêu dự án:
-- Dễ chạy local để demo bài tập lớn.
+- Dễ chạy local để demo.
 - Thể hiện rõ kiến trúc microservices thực tế.
 - Có đầy đủ luồng User và Admin.
 - Có tích hợp upload ảnh bằng Cloudinary.
@@ -29,6 +29,7 @@ API Gateway (Quarkus) :8080
 
 Async events: RabbitMQ
 Cache/Lock: Redis
+Search: Elasticsearch
 Database: PostgreSQL (multi-database)
 ```
 
@@ -51,6 +52,7 @@ Database: PostgreSQL (multi-database)
 | rabbitmq | 5672 | Message broker |
 | rabbitmq management | 15672 | UI quản trị RabbitMQ |
 | redis | 6379 | Cache + distributed lock |
+| elasticsearch | 9200 | Search engine |
 | frontend dev | 5173 | React dev server |
 
 ---
@@ -64,9 +66,10 @@ Database: PostgreSQL (multi-database)
 - PostgreSQL
 - RabbitMQ + SmallRye Reactive Messaging
 - Redis (Quarkus Redis Client)
+- Elasticsearch (Quarkus Elasticsearch Java Client)
 - JWT (SmallRye JWT)
 - Docker + Docker Compose
-- Kubernetes manifests (thư mục `k8s/`)
+- Kubernetes manifests (`k8s/`)
 - Frontend: React + TypeScript + Vite + Tailwind
 
 ---
@@ -85,24 +88,16 @@ Hệ thống kiểm tra `userId` trong JWT so với `userId` trong dữ liệu d
 - ticket
 - checkin
 
-Ví dụ:
-- USER không thể dùng passenger của tài khoản khác để booking.
-- USER không thể xem ticket/checkin không thuộc mình.
-- ADMIN được phép truy cập dữ liệu toàn hệ thống.
-
 ---
 
 ## 5) RabbitMQ event flow
 
-Luồng bất đồng bộ chính:
 1. `booking-service` publish `BookingCreatedEvent`
 2. `payment-service` consume và tạo payment `PENDING`
 3. Khi pay thành công: `payment-service` publish `PaymentCompletedEvent`
 4. `ticket-service` consume, tạo ticket, publish `TicketIssuedEvent`
 5. `checkin-service` publish `CheckinCompletedEvent`
-6. `notification-service` consume tất cả event và log ra console
-
-Lưu ý: ticket có thể xuất hiện trễ `1-3 giây` do async.
+6. `notification-service` consume và log event
 
 ---
 
@@ -132,11 +127,9 @@ docker compose down
 docker compose down -v
 ```
 
-Redis được chạy cùng stack với service name `redis` và port `6379`.
+---
 
---- 
-
-## 6.1) Redis đang được dùng cho gì?
+## 6.1) Redis dùng cho gì?
 
 ### Flight service cache
 - Cache `GET /api/airports` (TTL 10m)
@@ -144,12 +137,18 @@ Redis được chạy cùng stack với service name `redis` và port `6379`.
 - Cache `GET /api/flights` (TTL 30s)
 - Cache `GET /api/flights/{id}` (TTL 60s)
 - Cache `GET /api/seats/availability` (TTL 10s)
-- Invalidate cache khi admin CRUD airport/airplane/flight hoặc cập nhật seat
 
 ### Booking service distributed lock
 - Lock key: `lock:seat:{flightId}:{seatNumber}`
-- Dùng Redis `SET NX EX` để tránh nhiều request đồng thời đặt cùng một ghế
-- Nếu ghế đang bị lock, API tạo booking trả `409`
+- Dùng Redis `SET NX EX` để tránh đặt trùng ghế đồng thời
+
+---
+
+## 6.2) Elasticsearch dùng cho gì?
+
+- `flight-service` dùng index `flights` để search chuyến bay.
+- Endpoint dùng chung: `GET /api/flights/search`
+- Admin gọi cùng endpoint bằng admin token để thấy full dữ liệu theo role.
 
 ---
 
@@ -176,8 +175,6 @@ kubectl apply -f k8s/ingress.yml
 
 ## 8) Frontend React
 
-Thư mục frontend: `front-end/`
-
 ```bash
 cd front-end
 npm install
@@ -190,14 +187,13 @@ Build production:
 npm run build
 ```
 
-Frontend gọi API qua Gateway:
-- `http://localhost:8080`
+Frontend gọi API qua Gateway: `http://localhost:8080`
 
 ---
 
 ## 9) Swagger URLs
 
-- Gateway: `http://localhost:8080/q/swagger-ui/` (nếu bật)
+- Gateway: `http://localhost:8080/q/swagger-ui/`
 - Flight: `http://localhost:8081/q/swagger-ui/`
 - Passenger: `http://localhost:8082/q/swagger-ui/`
 - Booking: `http://localhost:8083/q/swagger-ui/`
@@ -220,25 +216,21 @@ Frontend gọi API qua Gateway:
 - `PUT /api/users/{id}` (ADMIN)
 - `DELETE /api/users/{id}` (ADMIN)
 - `GET /api/admin/dashboard/summary` (ADMIN)
+- `GET /api/users/search?keyword=&role=` (ADMIN)
 
 ### Flight domain
 - `GET /api/airports`
-- `POST /api/airports` (ADMIN)
-- `PUT /api/airports/{id}` (ADMIN)
-- `DELETE /api/airports/{id}` (ADMIN)
+- `GET /api/airports/search?keyword=`
 - `GET /api/airplanes`
-- `POST /api/airplanes` (ADMIN)
-- `PUT /api/airplanes/{id}` (ADMIN)
-- `DELETE /api/airplanes/{id}` (ADMIN)
+- `GET /api/airplanes/search?keyword=`
 - `GET /api/flights`
 - `GET /api/flights/{id}`
-- `POST /api/flights` (ADMIN)
-- `GET /api/seats`
-- `POST /api/seats` (ADMIN)
+- `GET /api/flights/search?keyword=&departureAirportId=&arrivalAirportId=&airplaneId=&status=&departureFrom=&departureTo=&page=&size=&sortBy=&sortDir=`
+- `GET /api/seats?flightId=&seatNumber=&booked=`
 - `GET /api/seats/availability`
 
 ### Passenger
-- `GET /api/passengers` (ADMIN)
+- `GET /api/passengers`
 - `GET /api/passengers/me`
 - `GET /api/passengers/{id}`
 - `GET /api/passengers/search?keyword=`
@@ -250,42 +242,38 @@ Frontend gọi API qua Gateway:
 - `GET /api/bookings`
 - `GET /api/bookings/me`
 - `GET /api/bookings/{id}`
+- `GET /api/bookings/search?bookingId=&passengerId=&flightId=&status=`
 - `POST /api/bookings`
 - `GET /api/payments`
 - `GET /api/payments/me`
 - `GET /api/payments/booking/{bookingId}`
+- `GET /api/payments/search?paymentId=&bookingId=&status=`
 - `PUT /api/payments/{id}/pay`
 - `GET /api/tickets` (ADMIN)
 - `GET /api/tickets/me`
 - `GET /api/tickets/code/{ticketCode}`
+- `GET /api/tickets/search?ticketCode=&status=&userId=`
 - `GET /api/checkins` (ADMIN)
 - `GET /api/checkins/me`
+- `GET /api/checkins/search?ticketCode=&status=&flightId=`
 - `POST /api/checkins`
 
 ---
 
 ## 11) Cloudinary upload
 
-Hệ thống hỗ trợ upload ảnh lên Cloudinary, lưu URL vào DB.
-
-### API upload
 - `POST /api/users/me/avatar` (USER/ADMIN)
 - `POST /api/airports/{id}/image` (ADMIN)
 - `POST /api/airplanes/{id}/image` (ADMIN)
 - `POST /api/flights/{id}/image` (ADMIN)
 
-### Validation
+Validation:
 - Chỉ cho phép: `image/jpeg`, `image/png`, `image/webp`
 - Max size: `5MB`
-- Sai định dạng/kích thước: `400`
-- ID không tồn tại: `404`
-- USER gọi endpoint ảnh của airport/airplane/flight: `403`
 
 ---
 
-## 12) Hướng dẫn tạo file `.env`
-
-Tạo file `.env` ở thư mục gốc dự án:
+## 12) Hướng dẫn tạo `.env`
 
 ```env
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -293,10 +281,7 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-Có thể tham chiếu từ file mẫu:
-- `.env.example`
-
-Sau khi đổi `.env`, recreate service nhận env mới:
+Sau khi đổi `.env`:
 
 ```bash
 docker compose up -d --force-recreate flight-service user-service
@@ -310,83 +295,27 @@ docker compose up -d --force-recreate flight-service user-service
 - Password: `admin123`
 - Role: `ADMIN`
 
-Admin được seed tự động khi `user-service` startup nếu chưa tồn tại.
-
 ---
 
-## 14) User flow demo
+## 14) Postman testing
 
-1. Register user
-2. Login user
-3. Xem flights
-4. Tạo passenger
-5. Tạo booking
-6. Thanh toán (`pay`)
-7. Xem ticket
-8. Check-in
-9. Logout
-
----
-
-## 15) Admin flow demo
-
-1. Login admin
-2. Xem dashboard summary
-3. Quản lý users
-4. CRUD airports
-5. CRUD airplanes
-6. Quản lý flights/seats/passengers
-7. Quản lý bookings/payments/tickets/checkins
-8. Upload ảnh Cloudinary cho airport/airplane/flight
-
----
-
-## 16) Postman testing
-
-Đã cung cấp sẵn:
+Đã cung cấp:
 - `Airline-Booking.postman_collection.json`
 - `Airline-Local.postman_environment.json`
 
-### Import nhanh
-1. Import collection + environment vào Postman
-2. Chọn environment `Airline Local`
-3. Chạy theo thứ tự folder:
-   - Auth
-   - Flight + Passenger + Booking + Payment + Ticket + Checkin
-   - Cloudinary Upload
+---
 
-Collection có script tự động:
-- Lưu `userToken`, `adminToken`
-- Lưu các id: `airportId`, `airplaneId`, `flightId`, `passengerId`, `bookingId`, `paymentId`, `ticketCode`
+## 15) Troubleshooting
+
+1. `503 Service Unavailable` sau startup: chờ 10-20 giây.
+2. Cloudinary `503`: kiểm tra `.env` và recreate service.
+3. `401 Unauthorized`: kiểm tra token.
+4. `403 Forbidden`: sai role.
+5. `404 Not Found`: sai endpoint hoặc id không tồn tại.
 
 ---
 
-## 17) Troubleshooting
-
-1. `503 Service Unavailable` ngay sau startup
-- Chờ `10-20 giây` để service healthy hoàn toàn.
-- Kiểm tra: `docker compose ps`
-
-2. Upload ảnh trả `503 Cloudinary is not configured`
-- Kiểm tra `.env` có đủ 3 biến Cloudinary.
-- Recreate `user-service`, `flight-service`.
-
-3. `401 Unauthorized`
-- Thiếu/sai token hoặc token hết hạn.
-- Login lại, kiểm tra header `Authorization: Bearer <token>`
-
-4. `403 Forbidden`
-- Sai role (USER gọi API ADMIN).
-
-5. `404 Not Found`
-- Sai endpoint hoặc `id` không tồn tại.
-
-6. Ticket chưa xuất hiện ngay sau pay
-- Luồng async RabbitMQ, chờ `1-3 giây` rồi gọi lại.
-
----
-
-## 18) Logs commands
+## 16) Logs commands
 
 ```bash
 docker compose logs -f api-gateway
@@ -399,13 +328,9 @@ docker compose logs -f checkin-service
 docker compose logs -f notification-service
 ```
 
-RabbitMQ UI:
-- `http://localhost:15672`
-- User/Pass: `guest/guest`
-
 ---
 
-## 19) Build backend local
+## 17) Build backend local
 
 ```bash
 mvn clean package -DskipTests
@@ -413,8 +338,8 @@ mvn clean package -DskipTests
 
 ---
 
-## 20) Ghi chú bảo mật
+## 18) Ghi chú bảo mật
 
 - Không commit `.env` thật lên GitHub.
-- Rotate Cloudinary secret nếu từng lộ thông tin.
-- Với production, nên dùng secret manager (K8s Secret, Vault...).
+- Rotate secret nếu lộ thông tin.
+- Production nên dùng secret manager.
