@@ -8,6 +8,7 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.OPTIONS;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -48,7 +49,13 @@ public class GatewayResource {
             "upgrade",
             "expect",
             "host",
-            "content-length"
+            "content-length",
+            "access-control-allow-origin",
+            "access-control-allow-methods",
+            "access-control-allow-headers",
+            "access-control-allow-credentials",
+            "access-control-max-age",
+            "access-control-expose-headers"
     );
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -84,6 +91,12 @@ public class GatewayResource {
                 "mode", "reverse-proxy",
                 "frontendBaseUrl", "http://localhost:8080"
         );
+    }
+
+    @OPTIONS
+    @Path("api/{path: .*}")
+    public Response options() {
+        return Response.ok().build();
     }
 
     @GET

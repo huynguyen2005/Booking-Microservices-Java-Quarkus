@@ -1,103 +1,154 @@
-﻿import '../App.css'
+import { Link, useNavigate } from 'react-router-dom';
+import { Plane, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { authApi } from '../api/endpoints';
+import { toast } from '../components/ui/Toast';
 
-function RegisterPage() {
+const registerSchema = z.object({
+  fullName: z.string().min(3, 'Tên ít nhất 3 ký tự'),
+  email: z.string().email('Email không hợp lệ'),
+  password: z.string().min(6, 'Mật khẩu ít nhất 6 ký tự'),
+  phone: z.string().optional(),
+});
+type RegisterForm = z.infer<typeof registerSchema>;
+
+export default function RegisterPage() {
+  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const onSubmit = async (data: RegisterForm) => {
+    try {
+      setErrorMsg('');
+      await authApi.register(data);
+      toast.success('Đăng ký thành công! Đang chuyển đến đăng nhập...');
+      setTimeout(() => navigate('/login'), 1200);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data || 'Đăng ký thất bại.';
+      setErrorMsg(typeof msg === 'string' ? msg : 'Đăng ký thất bại.');
+      toast.error(typeof msg === 'string' ? msg : 'Đăng ký thất bại.');
+    }
+  };
+
   return (
-    <main className="min-h-screen flex flex-col md:flex-row">
-      <section className="relative w-full md:w-[45%] lg:w-[40%] min-h-[300px] md:min-h-screen overflow-hidden flex flex-col justify-between p-12">
-        <div className="absolute inset-0 z-0">
-          <img alt="" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-DQ_qOSYVGIanic92xHkAZxeb8dg0J9wHUV5OBOKOgB4qibLUhmed3ofbhSOhBylGCE5Am828lMYux3nQLRGDZovdLJDYfOj6g7gZTMSN4_aOoW8kWwMKE8UzGPu1r-OYwQSBINKk-Itf0A0VpnhS3NN7NV-emyP4cx_pvIfcnnu7nibxAkDp3-ZnccoyCHPLTU9usdjapc5Mg-Prq7poPmOmb_R3erKQwKbo57GKCA_GOBCxjv7omlHPVDgHz8H_VxD0lBNxlKc" />
-          <div className="absolute inset-0 bg-navy-gradient" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-on-primary text-4xl">flight_takeoff</span>
-            <h1 className="font-h3 text-h3 font-bold text-on-primary tracking-tight">SkyVoyage</h1>
+    <div className="min-h-screen flex">
+      {/* Left brand panel — desktop only */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-[var(--color-primary)] items-center justify-center p-12">
+        <div className="max-w-md text-white">
+          <div className="flex items-center gap-3 mb-8">
+            <Plane className="h-10 w-10" />
+            <span className="text-3xl font-bold tracking-tight">SkyFlow</span>
           </div>
+          <h1 className="text-4xl font-bold leading-tight mb-4">
+            Tạo tài khoản<br />bắt đầu hành trình
+          </h1>
+          <p className="text-blue-100 text-lg leading-relaxed">
+            Đăng ký miễn phí để đặt vé, quản lý hành khách, theo dõi thanh toán và check-in trực tuyến.
+          </p>
         </div>
-        <div className="relative z-10 mb-12">
-          <div className="max-w-xs">
-            <span className="material-symbols-outlined text-brand-orange text-3xl mb-4 block">format_quote</span>
-            <p className="font-h2 text-h2 text-on-primary leading-tight mb-4">Khám phá thế giới, bắt đầu từ đây.</p>
-            <div className="h-1 w-12 bg-brand-orange rounded-full" />
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-[var(--color-bg)]">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <Plane className="h-7 w-7 text-[var(--color-primary)]" />
+            <span className="text-2xl font-bold text-[var(--color-primary)]">SkyFlow</span>
           </div>
-        </div>
-      </section>
 
-      <section className="w-full md:w-[55%] lg:w-[60%] flex items-center justify-center p-6 md:p-12 lg:p-24 bg-surface-bright relative">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001e40 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-        <div className="glass-card w-full max-w-[540px] p-8 md:p-12 rounded-2xl shadow-[0px_10px_30px_rgba(0,51,102,0.08)] relative z-10 border border-white/40">
-          <header className="mb-10 text-center md:text-left">
-            <h2 className="font-h2 text-h2 text-primary mb-2">Tạo tài khoản mới</h2>
-            <p className="font-body-md text-on-surface-variant">Bắt đầu hành trình bay cùng SkyVoyage</p>
-          </header>
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            <div className="space-y-2">
-              <label className="font-label-caps text-label-caps text-on-surface-variant px-1" htmlFor="fullname">HỌ VÀ TÊN</label>
-              <div className="relative group">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
-                <input className="w-full pl-12 pr-4 py-4 bg-white/50 border border-outline-variant rounded-2xl focus:ring-2 focus:ring-primary-fixed focus:border-primary outline-none transition-all placeholder:text-outline-variant" id="fullname" placeholder="Nguyễn Văn A" type="text" />
-              </div>
+          <h2 className="text-2xl font-bold text-[var(--color-text-main)] mb-1">Tạo tài khoản</h2>
+          <p className="text-sm text-[var(--color-text-muted)] mb-8">Điền thông tin bên dưới để đăng ký.</p>
+
+          {errorMsg && (
+            <div className="mb-6 p-3 bg-[var(--color-danger-soft)] text-[var(--color-danger)] border border-[var(--color-danger)] border-opacity-20 rounded-[var(--radius-sm)] text-sm">
+              {errorMsg}
             </div>
+          )}
 
-            <div className="space-y-2">
-              <label className="font-label-caps text-label-caps text-on-surface-variant px-1" htmlFor="email">EMAIL</label>
-              <div className="relative group">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
-                <input className="w-full pl-12 pr-4 py-4 bg-white/50 border border-outline-variant rounded-2xl focus:ring-2 focus:ring-primary-fixed focus:border-primary outline-none transition-all placeholder:text-outline-variant" id="email" placeholder="example@skyvoyage.com" type="email" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="font-label-caps text-label-caps text-on-surface-variant px-1" htmlFor="phone">SỐ ĐIỆN THOẠI</label>
-              <div className="relative group flex">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                  <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors">phone</span>
-                  <span className="text-on-surface-variant font-medium border-r border-outline-variant pr-2">+84</span>
-                </div>
-                <input className="w-full pl-28 pr-4 py-4 bg-white/50 border border-outline-variant rounded-2xl focus:ring-2 focus:ring-primary-fixed focus:border-primary outline-none transition-all placeholder:text-outline-variant" id="phone" placeholder="987 654 321" type="tel" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="font-label-caps text-label-caps text-on-surface-variant px-1" htmlFor="password">MẬT KHẨU</label>
-              <div className="relative group">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
-                <input className="w-full pl-12 pr-12 py-4 bg-white/50 border border-outline-variant rounded-2xl focus:ring-2 focus:ring-primary-fixed focus:border-primary outline-none transition-all placeholder:text-outline-variant" id="password" placeholder="••••••••" type="password" />
-                <button className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" type="button">
-                  <span className="material-symbols-outlined">visibility</span>
-                </button>
-              </div>
-              <div className="flex gap-1.5 mt-2 px-1">
-                <div className="h-1 flex-1 rounded-full bg-primary-container"></div>
-                <div className="h-1 flex-1 rounded-full bg-primary-container"></div>
-                <div className="h-1 flex-1 rounded-full bg-surface-variant"></div>
-                <div className="h-1 flex-1 rounded-full bg-surface-variant"></div>
-              </div>
-              <p className="text-[11px] text-outline px-1">Mật khẩu phải bao gồm ít nhất 8 ký tự.</p>
-            </div>
-
-            <div className="flex items-start gap-3 px-1 pt-2">
-              <input className="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary transition-all" id="terms" type="checkbox" />
-              <label className="text-body-md text-on-surface-variant leading-tight cursor-pointer" htmlFor="terms">
-                Tôi đồng ý với <a className="text-primary font-semibold hover:underline" href="#">Điều khoản sử dụng</a> và <a className="text-primary font-semibold hover:underline" href="#">Chính sách bảo mật</a>.
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-[var(--color-text-main)] mb-1.5">
+                Họ và tên <span className="text-[var(--color-danger)]">*</span>
               </label>
+              <input
+                id="fullName"
+                {...register('fullName')}
+                type="text"
+                placeholder="Nguyễn Văn A"
+                autoComplete="name"
+                className={errors.fullName ? 'border-[var(--color-danger)]' : ''}
+              />
+              {errors.fullName && <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.fullName.message}</p>}
             </div>
 
-            <button className="w-full py-5 bg-brand-orange text-white font-bold rounded-full text-lg shadow-lg hover:shadow-xl glow-hover transition-all duration-300 transform active:scale-[0.98] mt-4" type="submit">
-              Đăng ký
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text-main)] mb-1.5">
+                Email <span className="text-[var(--color-danger)]">*</span>
+              </label>
+              <input
+                id="email"
+                {...register('email')}
+                type="email"
+                placeholder="email@example.com"
+                autoComplete="email"
+                className={errors.email ? 'border-[var(--color-danger)]' : ''}
+              />
+              {errors.email && <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-[var(--color-text-main)] mb-1.5">
+                Số điện thoại
+              </label>
+              <input
+                id="phone"
+                {...register('phone')}
+                type="tel"
+                placeholder="0901234567"
+                autoComplete="tel"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[var(--color-text-main)] mb-1.5">
+                Mật khẩu <span className="text-[var(--color-danger)]">*</span>
+              </label>
+              <input
+                id="password"
+                {...register('password')}
+                type="password"
+                placeholder="Ít nhất 6 ký tự"
+                autoComplete="new-password"
+                className={errors.password ? 'border-[var(--color-danger)]' : ''}
+              />
+              {errors.password && <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.password.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-[var(--color-primary)] text-white font-semibold rounded-[var(--radius-sm)] hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin-slow" />}
+              {isSubmitting ? 'Đang xử lý...' : 'Đăng ký'}
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-outline-variant/30 text-center">
-            <p className="text-on-surface-variant">Đã có tài khoản?<a className="text-primary font-bold hover:underline ml-1" href="#">Đăng nhập</a></p>
-          </div>
+          <p className="mt-8 text-center text-sm text-[var(--color-text-muted)]">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="text-[var(--color-primary)] font-semibold hover:underline">
+              Đăng nhập
+            </Link>
+          </p>
         </div>
-
-        <div className="absolute top-20 right-20 w-32 h-32 bg-primary-fixed-dim/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-20 w-48 h-48 bg-secondary-fixed/20 rounded-full blur-3xl"></div>
-      </section>
-    </main>
-  )
+      </div>
+    </div>
+  );
 }
-
-export default RegisterPage

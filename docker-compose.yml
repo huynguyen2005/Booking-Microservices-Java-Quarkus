@@ -74,6 +74,15 @@ services:
       GATEWAY_PAYMENT_SERVICE_URL: http://payment-service:8084
       GATEWAY_TICKET_SERVICE_URL: http://ticket-service:8085
       GATEWAY_CHECKIN_SERVICE_URL: http://checkin-service:8087
+      # CORS Configuration
+      QUARKUS_HTTP_CORS: "true"
+      QUARKUS_HTTP_CORS_ORIGINS: "/.*/,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+      QUARKUS_HTTP_CORS_METHODS: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+      QUARKUS_HTTP_CORS_HEADERS: "Accept,Authorization,Content-Type,Origin,X-Requested-With"
+      QUARKUS_HTTP_CORS_EXPOSED_HEADERS: "Location,Content-Disposition,Authorization"
+      QUARKUS_HTTP_CORS_ACCESS_CONTROL_ALLOW_CREDENTIALS: "true"
+      QUARKUS_HTTP_CORS_ACCESS_CONTROL_MAX_AGE: "3600"
+      QUARKUS_HTTP_AUTH_PROACTIVE: "false"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ > /dev/null"]
       interval: 10s
