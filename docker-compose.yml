@@ -40,6 +40,23 @@ services:
     networks:
       - booking-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: booking-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - booking-network
+
   api-gateway:
     build:
       context: .
@@ -99,6 +116,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports: ["8081:8081"]
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/flight_db
@@ -108,6 +127,7 @@ services:
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      REDIS_URL: redis://redis:6379
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8081/q/swagger-ui/ > /dev/null"]
       interval: 10s
@@ -150,6 +170,8 @@ services:
         condition: service_healthy
       passenger-service:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports: ["8083:8083"]
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/booking_db
@@ -158,6 +180,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       FLIGHT_SERVICE_URL: http://flight-service:8081
       PASSENGER_SERVICE_URL: http://passenger-service:8082
+      REDIS_URL: redis://redis:6379
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8083/q/swagger-ui/ > /dev/null"]
       interval: 10s
@@ -306,3 +329,4 @@ networks:
 volumes:
   postgres_data:
   rabbitmq_data:
+  redis_data:

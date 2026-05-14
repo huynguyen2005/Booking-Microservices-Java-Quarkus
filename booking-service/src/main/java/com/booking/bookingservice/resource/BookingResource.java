@@ -5,6 +5,7 @@ import com.booking.bookingservice.client.PassengerClient;
 import com.booking.bookingservice.client.PassengerView;
 import com.booking.bookingservice.entity.Booking;
 import com.booking.bookingservice.event.BookingCreatedEvent;
+import com.booking.bookingservice.service.SeatLockService;
 import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -35,6 +36,7 @@ public class BookingResource {
     @Inject @RestClient FlightClient flightClient;
     @Inject @RestClient PassengerClient passengerClient;
     @Inject @Channel("booking-created-out") Emitter<BookingCreatedEvent> emitter;
+    @Inject SeatLockService seatLockService;
     @Inject JsonWebToken jwt;
 
     @GET @RolesAllowed("ADMIN") public List<Booking> all(){ return Booking.listAll(); }
@@ -58,6 +60,14 @@ public class BookingResource {
 
     @POST @Transactional @RolesAllowed({"USER","ADMIN"})
     public Booking create(Booking b, @Context HttpHeaders headers){
+        if (b == null || b.flightId == null || b.seatNumber == null || b.seatNumber.isBlank()) {
+            throw new WebApplicationException("flightId and seatNumber are required", 400);
+        }
+        String lockOwner = seatLockService.acquire(b.flightId, b.seatNumber);
+        if (lockOwner == null) {
+            throw new WebApplicationException("Seat is being booked by another request, please retry", 409);
+        }
+        try {
         String authorization = headers.getHeaderString("Authorization");
         PassengerView passenger;
         try {
@@ -84,6 +94,9 @@ public class BookingResource {
         e.bookingId=b.id; e.userId=b.userId; e.passengerId=b.passengerId; e.flightId=b.flightId; e.seatNumber=b.seatNumber;
         emitter.send(e);
         return b;
+        } finally {
+            seatLockService.release(b.flightId, b.seatNumber, lockOwner);
+        }
     }
 
     private long currentUserId() {

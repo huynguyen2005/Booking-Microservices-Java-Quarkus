@@ -1,6 +1,6 @@
 ﻿# Booking Microservices Java Quarkus
 
-Hệ thống đặt vé máy bay theo kiến trúc microservices, xây dựng bằng **Java Quarkus**, sử dụng **PostgreSQL**, **RabbitMQ**, **JWT RBAC**, hỗ trợ chạy bằng **Docker Compose** và deploy trên **Kubernetes**.
+Hệ thống đặt vé máy bay theo kiến trúc microservices, xây dựng bằng **Java Quarkus**, sử dụng **PostgreSQL**, **RabbitMQ**, **Redis**, **JWT RBAC**, hỗ trợ chạy bằng **Docker Compose** và deploy trên **Kubernetes**.
 
 Mục tiêu dự án:
 - Dễ chạy local để demo bài tập lớn.
@@ -28,6 +28,7 @@ API Gateway (Quarkus) :8080
         +--> notification-service:8086
 
 Async events: RabbitMQ
+Cache/Lock: Redis
 Database: PostgreSQL (multi-database)
 ```
 
@@ -49,6 +50,7 @@ Database: PostgreSQL (multi-database)
 | postgres | 5432 | Database |
 | rabbitmq | 5672 | Message broker |
 | rabbitmq management | 15672 | UI quản trị RabbitMQ |
+| redis | 6379 | Cache + distributed lock |
 | frontend dev | 5173 | React dev server |
 
 ---
@@ -61,6 +63,7 @@ Database: PostgreSQL (multi-database)
 - Hibernate ORM with Panache
 - PostgreSQL
 - RabbitMQ + SmallRye Reactive Messaging
+- Redis (Quarkus Redis Client)
 - JWT (SmallRye JWT)
 - Docker + Docker Compose
 - Kubernetes manifests (thư mục `k8s/`)
@@ -128,6 +131,25 @@ docker compose down
 ```bash
 docker compose down -v
 ```
+
+Redis được chạy cùng stack với service name `redis` và port `6379`.
+
+--- 
+
+## 6.1) Redis đang được dùng cho gì?
+
+### Flight service cache
+- Cache `GET /api/airports` (TTL 10m)
+- Cache `GET /api/airplanes` (TTL 10m)
+- Cache `GET /api/flights` (TTL 30s)
+- Cache `GET /api/flights/{id}` (TTL 60s)
+- Cache `GET /api/seats/availability` (TTL 10s)
+- Invalidate cache khi admin CRUD airport/airplane/flight hoặc cập nhật seat
+
+### Booking service distributed lock
+- Lock key: `lock:seat:{flightId}:{seatNumber}`
+- Dùng Redis `SET NX EX` để tránh nhiều request đồng thời đặt cùng một ghế
+- Nếu ghế đang bị lock, API tạo booking trả `409`
 
 ---
 

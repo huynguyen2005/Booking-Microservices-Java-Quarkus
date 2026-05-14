@@ -7,6 +7,7 @@ import com.booking.flightservice.entity.Airport;
 import com.booking.flightservice.entity.Flight;
 import com.booking.flightservice.entity.Seat;
 import com.booking.flightservice.service.CloudinaryUploadService;
+import com.booking.flightservice.service.FlightCacheService;
 import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
@@ -38,14 +39,34 @@ public class FlightResource {
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
 
     private final CloudinaryUploadService cloudinaryUploadService;
+    private final FlightCacheService flightCacheService;
 
-    public FlightResource(CloudinaryUploadService cloudinaryUploadService) {
+    public FlightResource(CloudinaryUploadService cloudinaryUploadService, FlightCacheService flightCacheService) {
         this.cloudinaryUploadService = cloudinaryUploadService;
+        this.flightCacheService = flightCacheService;
     }
 
-    @GET @Path("/airports") @PermitAll public List<Airport> airports(){ return Airport.listAll(); }
-    @POST @Path("/airports") @RolesAllowed("ADMIN") @Transactional public Airport addAirport(Airport x){ x.persist(); return x; }
-    @PUT @Path("/airports/{id}") @RolesAllowed("ADMIN") @Transactional
+    @GET
+    @Path("/airports")
+    @PermitAll
+    public List<Airport> airports() {
+        return flightCacheService.airports(() -> Airport.listAll());
+    }
+
+    @POST
+    @Path("/airports")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Airport addAirport(Airport x) {
+        x.persist();
+        flightCacheService.invalidateAirportCache();
+        return x;
+    }
+
+    @PUT
+    @Path("/airports/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public Airport updateAirport(@PathParam("id") Long id, Airport input) {
         Airport airport = Airport.findById(id);
         if (airport == null) {
@@ -54,28 +75,59 @@ public class FlightResource {
         airport.code = input.code;
         airport.name = input.name;
         airport.city = input.city;
+        flightCacheService.invalidateAirportCache();
         return airport;
     }
-    @POST @Path("/airports/{id}/image") @RolesAllowed("ADMIN") @Consumes(MediaType.MULTIPART_FORM_DATA) @Transactional
+
+    @POST
+    @Path("/airports/{id}/image")
+    @RolesAllowed("ADMIN")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Transactional
     public ImageUploadResponse uploadAirportImage(@PathParam("id") Long id, ImageUploadForm form) {
         Airport airport = Airport.findById(id);
         if (airport == null) {
             throw new NotFoundException("Airport not found");
         }
         airport.imageUrl = uploadToCloudinary(form, "flight/airports");
+        flightCacheService.invalidateAirportCache();
         return new ImageUploadResponse(airport.imageUrl);
     }
-    @DELETE @Path("/airports/{id}") @RolesAllowed("ADMIN") @Transactional
+
+    @DELETE
+    @Path("/airports/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public void deleteAirport(@PathParam("id") Long id) {
         Airport airport = Airport.findById(id);
         if (airport == null) {
             throw new NotFoundException("Airport not found");
         }
         airport.delete();
+        flightCacheService.invalidateAirportCache();
     }
-    @GET @Path("/airplanes") @RolesAllowed({"USER", "ADMIN"}) public List<Airplane> airplanes(){ return Airplane.listAll(); }
-    @POST @Path("/airplanes") @RolesAllowed("ADMIN") @Transactional public Airplane addAirplane(Airplane x){ x.persist(); return x; }
-    @PUT @Path("/airplanes/{id}") @RolesAllowed("ADMIN") @Transactional
+
+    @GET
+    @Path("/airplanes")
+    @PermitAll
+    public List<Airplane> airplanes() {
+        return flightCacheService.airplanes(() -> Airplane.listAll());
+    }
+
+    @POST
+    @Path("/airplanes")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Airplane addAirplane(Airplane x) {
+        x.persist();
+        flightCacheService.invalidateAirplaneCache();
+        return x;
+    }
+
+    @PUT
+    @Path("/airplanes/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public Airplane updateAirplane(@PathParam("id") Long id, Airplane input) {
         Airplane airplane = Airplane.findById(id);
         if (airplane == null) {
@@ -84,38 +136,81 @@ public class FlightResource {
         airplane.code = input.code;
         airplane.model = input.model;
         airplane.totalSeats = input.totalSeats;
+        flightCacheService.invalidateAirplaneCache();
         return airplane;
     }
-    @POST @Path("/airplanes/{id}/image") @RolesAllowed("ADMIN") @Consumes(MediaType.MULTIPART_FORM_DATA) @Transactional
+
+    @POST
+    @Path("/airplanes/{id}/image")
+    @RolesAllowed("ADMIN")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Transactional
     public ImageUploadResponse uploadAirplaneImage(@PathParam("id") Long id, ImageUploadForm form) {
         Airplane airplane = Airplane.findById(id);
         if (airplane == null) {
             throw new NotFoundException("Airplane not found");
         }
         airplane.imageUrl = uploadToCloudinary(form, "flight/airplanes");
+        flightCacheService.invalidateAirplaneCache();
         return new ImageUploadResponse(airplane.imageUrl);
     }
-    @DELETE @Path("/airplanes/{id}") @RolesAllowed("ADMIN") @Transactional
+
+    @DELETE
+    @Path("/airplanes/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public void deleteAirplane(@PathParam("id") Long id) {
         Airplane airplane = Airplane.findById(id);
         if (airplane == null) {
             throw new NotFoundException("Airplane not found");
         }
         airplane.delete();
+        flightCacheService.invalidateAirplaneCache();
     }
-    @GET @Path("/flights") @PermitAll public List<Flight> flights(){ return Flight.listAll(); }
-    @GET @Path("/flights/{id}") @PermitAll public Flight flight(@PathParam("id") Long id){ return Flight.findById(id); }
-    @POST @Path("/flights") @RolesAllowed("ADMIN") @Transactional public Flight addFlight(Flight x){ x.persist(); return x; }
-    @POST @Path("/flights/{id}/image") @RolesAllowed("ADMIN") @Consumes(MediaType.MULTIPART_FORM_DATA) @Transactional
+
+    @GET
+    @Path("/flights")
+    @PermitAll
+    public List<Flight> flights() {
+        return flightCacheService.flights(() -> Flight.listAll());
+    }
+
+    @GET
+    @Path("/flights/{id}")
+    @PermitAll
+    public Flight flight(@PathParam("id") Long id) {
+        return flightCacheService.flight(id, () -> Flight.findById(id));
+    }
+
+    @POST
+    @Path("/flights")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Flight addFlight(Flight x) {
+        x.persist();
+        flightCacheService.invalidateFlightCache(null);
+        return x;
+    }
+
+    @POST
+    @Path("/flights/{id}/image")
+    @RolesAllowed("ADMIN")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Transactional
     public ImageUploadResponse uploadFlightImage(@PathParam("id") Long id, ImageUploadForm form) {
         Flight flight = Flight.findById(id);
         if (flight == null) {
             throw new NotFoundException("Flight not found");
         }
         flight.imageUrl = uploadToCloudinary(form, "flight/flights");
+        flightCacheService.invalidateFlightCache(id);
         return new ImageUploadResponse(flight.imageUrl);
     }
-    @PUT @Path("/flights/{id}") @RolesAllowed("ADMIN") @Transactional
+
+    @PUT
+    @Path("/flights/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public Flight updateFlight(@PathParam("id") Long id, Flight input) {
         Flight flight = Flight.findById(id);
         if (flight == null) {
@@ -128,24 +223,62 @@ public class FlightResource {
         flight.departureTime = input.departureTime;
         flight.arrivalTime = input.arrivalTime;
         flight.status = input.status;
+        flightCacheService.invalidateFlightCache(id);
         return flight;
     }
-    @DELETE @Path("/flights/{id}") @RolesAllowed("ADMIN") @Transactional
+
+    @DELETE
+    @Path("/flights/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
     public void deleteFlight(@PathParam("id") Long id) {
         Flight flight = Flight.findById(id);
         if (flight == null) {
             throw new NotFoundException("Flight not found");
         }
         flight.delete();
+        flightCacheService.invalidateFlightCache(id);
     }
-    @GET @Path("/seats") @RolesAllowed({"USER", "ADMIN"}) public List<Seat> seats(@QueryParam("flightId") Long flightId){ return flightId==null?Seat.listAll():Seat.list("flightId",flightId); }
-    @POST @Path("/seats") @RolesAllowed("ADMIN") @Transactional public Seat addSeat(Seat x){ x.persist(); return x; }
-    @GET @Path("/seats/availability") @RolesAllowed({"USER", "ADMIN"})
-    public boolean available(@QueryParam("flightId") Long flightId,@QueryParam("seatNumber") String seatNumber){
-        Seat s=Seat.find("flightId=?1 and seatNumber=?2",flightId,seatNumber).firstResult();
-        return s!=null && !s.booked;
+
+    @GET
+    @Path("/seats")
+    @RolesAllowed({"USER", "ADMIN"})
+    public List<Seat> seats(@QueryParam("flightId") Long flightId) {
+        return flightId == null ? Seat.listAll() : Seat.list("flightId", flightId);
     }
-    @PUT @Path("/seats/{id}/book") @RolesAllowed("ADMIN") @Transactional public Seat book(@PathParam("id") Long id){ Seat s=Seat.findById(id); if(s!=null)s.booked=true; return s; }
+
+    @POST
+    @Path("/seats")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Seat addSeat(Seat x) {
+        x.persist();
+        flightCacheService.invalidateSeatAvailability(x.flightId, x.seatNumber);
+        return x;
+    }
+
+    @GET
+    @Path("/seats/availability")
+    @RolesAllowed({"USER", "ADMIN"})
+    public boolean available(@QueryParam("flightId") Long flightId, @QueryParam("seatNumber") String seatNumber) {
+        return flightCacheService.seatAvailability(flightId, seatNumber, () -> {
+            Seat s = Seat.find("flightId=?1 and seatNumber=?2", flightId, seatNumber).firstResult();
+            return s != null && !s.booked;
+        });
+    }
+
+    @PUT
+    @Path("/seats/{id}/book")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Seat book(@PathParam("id") Long id) {
+        Seat s = Seat.findById(id);
+        if (s != null) {
+            s.booked = true;
+            flightCacheService.invalidateSeatAvailability(s.flightId, s.seatNumber);
+        }
+        return s;
+    }
 
     private String uploadToCloudinary(ImageUploadForm form, String folder) {
         if (form == null || form.file == null) {
