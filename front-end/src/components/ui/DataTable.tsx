@@ -1,4 +1,4 @@
-import { useState, useMemo, ReactNode } from 'react';
+﻿import { useState, useMemo, ReactNode, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Column<T> {
@@ -22,11 +22,15 @@ export function DataTable<T extends Record<string, any>>({
   data,
   pageSize = 10,
   onRowClick,
-  emptyMessage = 'Không có dữ liệu.',
+  emptyMessage = 'Không có d? li?u.',
 }: DataTableProps<T>) {
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  useEffect(() => {
+    setPage(0);
+  }, [data.length]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -54,7 +58,8 @@ export function DataTable<T extends Record<string, any>>({
   }, [data, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paged = sorted.slice(page * pageSize, (page + 1) * pageSize);
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = sorted.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   const SortIcon = ({ colKey }: { colKey: string }) => {
     if (sortKey !== colKey) return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />;
@@ -62,11 +67,7 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   if (data.length === 0) {
-    return (
-      <div className="text-center py-12 text-[var(--color-text-muted)] text-sm">
-        {emptyMessage}
-      </div>
-    );
+    return <div className="text-center py-12 text-[var(--color-text-muted)] text-sm">{emptyMessage}</div>;
   }
 
   return (
@@ -107,35 +108,30 @@ export function DataTable<T extends Record<string, any>>({
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border)]">
           <span className="text-xs text-[var(--color-text-muted)]">
-            Hiển thị {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)} / {sorted.length}
+            Hi?n th? {safePage * pageSize + 1}-{Math.min((safePage + 1) * pageSize, sorted.length)} / {sorted.length}
           </span>
           <div className="flex items-center gap-1">
             <button
               className="p-1.5 rounded-md hover:bg-[var(--color-surface-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              disabled={page === 0}
+              disabled={safePage === 0}
               onClick={() => setPage(p => p - 1)}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               let pageNum: number;
-              if (totalPages <= 5) {
-                pageNum = i;
-              } else if (page < 3) {
-                pageNum = i;
-              } else if (page > totalPages - 4) {
-                pageNum = totalPages - 5 + i;
-              } else {
-                pageNum = page - 2 + i;
-              }
+              if (totalPages <= 5) pageNum = i;
+              else if (safePage < 3) pageNum = i;
+              else if (safePage > totalPages - 4) pageNum = totalPages - 5 + i;
+              else pageNum = safePage - 2 + i;
+
               return (
                 <button
                   key={pageNum}
-                  className={`w-8 h-8 text-xs font-medium rounded-md transition-colors ${page === pageNum ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-surface-subtle)] text-[var(--color-text-muted)]'}`}
+                  className={`w-8 h-8 text-xs font-medium rounded-md transition-colors ${safePage === pageNum ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-surface-subtle)] text-[var(--color-text-muted)]'}`}
                   onClick={() => setPage(pageNum)}
                 >
                   {pageNum + 1}
@@ -144,7 +140,7 @@ export function DataTable<T extends Record<string, any>>({
             })}
             <button
               className="p-1.5 rounded-md hover:bg-[var(--color-surface-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              disabled={page === totalPages - 1}
+              disabled={safePage === totalPages - 1}
               onClick={() => setPage(p => p + 1)}
             >
               <ChevronRight className="w-4 h-4" />
@@ -155,3 +151,4 @@ export function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
+

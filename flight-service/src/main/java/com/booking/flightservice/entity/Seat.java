@@ -6,4 +6,5 @@ public class Seat extends PanacheEntity {
     public Long flightId;
     public String seatNumber;
     public boolean booked;
+    public String status;
 }

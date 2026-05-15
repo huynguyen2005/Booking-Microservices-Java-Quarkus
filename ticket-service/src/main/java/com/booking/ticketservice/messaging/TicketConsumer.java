@@ -14,14 +14,22 @@ public class TicketConsumer {
     @Incoming("payment-completed-in")
     @Transactional
     public void consume(JsonObject event){
-        Ticket t=new Ticket();
         Long bookingId = event.getLong("bookingId");
+        if (bookingId == null) {
+            return;
+        }
+        Ticket existing = Ticket.find("bookingId", bookingId).firstResult();
+        if (existing != null) {
+            return;
+        }
+        Ticket t=new Ticket();
         Long userId = event.getLong("userId");
         Long passengerId = event.getLong("passengerId");
         Long flightId = event.getLong("flightId");
+        String seatNumber = event.getString("seatNumber");
         t.userId=userId;
         t.ticketCode="TKT-"+bookingId+"-"+System.currentTimeMillis();
-        t.bookingId=bookingId; t.passengerId=passengerId; t.flightId=flightId; t.seatNumber="AUTO"; t.status="ISSUED";
+        t.bookingId=bookingId; t.passengerId=passengerId; t.flightId=flightId; t.seatNumber=seatNumber; t.status="ISSUED";
         t.persist();
         TicketIssuedEvent out=new TicketIssuedEvent(); out.ticketId=t.id; out.userId=t.userId; out.ticketCode=t.ticketCode; out.bookingId=t.bookingId; out.passengerId=t.passengerId; out.flightId=t.flightId; out.status=t.status;
         issued.send(out);

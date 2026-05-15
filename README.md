@@ -92,12 +92,20 @@ Hệ thống kiểm tra `userId` trong JWT so với `userId` trong dữ liệu d
 
 ## 5) RabbitMQ event flow
 
-1. `booking-service` publish `BookingCreatedEvent`
+1. `booking-service` hold seat, tạo booking `PENDING_PAYMENT`, publish `BookingCreatedEvent`
 2. `payment-service` consume và tạo payment `PENDING`
-3. Khi pay thành công: `payment-service` publish `PaymentCompletedEvent`
-4. `ticket-service` consume, tạo ticket, publish `TicketIssuedEvent`
-5. `checkin-service` publish `CheckinCompletedEvent`
-6. `notification-service` consume và log event
+3. Khi thanh toán thành công: `payment-service` publish `PaymentCompletedEvent`
+4. `booking-service` consume `PaymentCompletedEvent`, chuyển booking `CONFIRMED`, confirm seat `BOOKED`
+5. `ticket-service` consume `PaymentCompletedEvent`, tạo ticket với `seatNumber` thật, publish `TicketIssuedEvent`
+6. Khi thanh toán thất bại: `payment-service` publish `PaymentFailedEvent`
+7. `booking-service` consume `PaymentFailedEvent`, chuyển booking `CANCELLED`, release seat về `AVAILABLE`
+8. `checkin-service` publish `CheckinCompletedEvent`
+9. `notification-service` consume và log event
+
+Timeout flow:
+- `booking-service` có scheduler chạy mỗi `1m`.
+- Booking `PENDING_PAYMENT` quá `1 phút` sẽ chuyển `EXPIRED`, release ghế.
+- Đồng thời `booking-service` gọi internal API của `payment-service` để đổi payment tương ứng từ `PENDING` sang `FAILED`.
 
 ---
 
@@ -229,6 +237,10 @@ Frontend gọi API qua Gateway: `http://localhost:8080`
 - `GET /api/seats?flightId=&seatNumber=&booked=`
 - `GET /api/seats/availability`
 
+Flight payload fields mới:
+- `basePrice` (numeric): giá vé cơ bản
+- `currency` (string): đơn vị tiền, mặc định `VND`
+
 ### Passenger
 - `GET /api/passengers`
 - `GET /api/passengers/me`
@@ -244,11 +256,19 @@ Frontend gọi API qua Gateway: `http://localhost:8080`
 - `GET /api/bookings/{id}`
 - `GET /api/bookings/search?bookingId=&passengerId=&flightId=&status=`
 - `POST /api/bookings`
+- `PUT /api/bookings/{id}/cancel`
 - `GET /api/payments`
 - `GET /api/payments/me`
 - `GET /api/payments/booking/{bookingId}`
 - `GET /api/payments/search?paymentId=&bookingId=&status=`
-- `PUT /api/payments/{id}/pay`
+- `POST /api/payments/{id}/simulate-success`
+- `POST /api/payments/{id}/simulate-fail`
+- `PUT /api/payments/internal/booking/{bookingId}/expire` (internal service-to-service, dùng cho auto-timeout)
+
+Payment fields mới:
+- `amount` (numeric): số tiền thanh toán
+- `currency` (string): đơn vị tiền, mặc định `VND`
+- `paidAt` (ISO timestamp): thời điểm thanh toán thành công
 - `GET /api/tickets` (ADMIN)
 - `GET /api/tickets/me`
 - `GET /api/tickets/code/{ticketCode}`
@@ -257,6 +277,12 @@ Frontend gọi API qua Gateway: `http://localhost:8080`
 - `GET /api/checkins/me`
 - `GET /api/checkins/search?ticketCode=&status=&flightId=`
 - `POST /api/checkins`
+
+Booking status:
+- `PENDING_PAYMENT`
+- `CONFIRMED`
+- `CANCELLED`
+- `EXPIRED`
 
 ---
 

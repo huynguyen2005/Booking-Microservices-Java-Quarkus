@@ -1,6 +1,7 @@
 package com.booking.flightservice.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
+import java.math.BigDecimal;
 @Entity
 public class Flight extends PanacheEntity {
     public Long departureAirportId;
@@ -11,4 +12,6 @@ public class Flight extends PanacheEntity {
     public String arrivalTime;
     public String status;
     public String imageUrl;
+    public BigDecimal basePrice;
+    public String currency;
 }

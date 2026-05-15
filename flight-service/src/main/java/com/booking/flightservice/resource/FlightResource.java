@@ -29,10 +29,12 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Locale;
 
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
@@ -222,6 +224,10 @@ public class FlightResource {
     @RolesAllowed("ADMIN")
     @Transactional
     public Flight addFlight(Flight x) {
+        if (x.basePrice == null || x.basePrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("basePrice must be >= 0");
+        }
+        x.currency = normalizeCurrency(x.currency);
         x.persist();
         flightCacheService.invalidateFlightCache(null);
         flightSearchService.indexFlight(x);
@@ -259,6 +265,11 @@ public class FlightResource {
         flight.departureTime = input.departureTime;
         flight.arrivalTime = input.arrivalTime;
         flight.status = input.status;
+        if (input.basePrice == null || input.basePrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("basePrice must be >= 0");
+        }
+        flight.basePrice = input.basePrice;
+        flight.currency = normalizeCurrency(input.currency);
         flightCacheService.invalidateFlightCache(id);
         flightSearchService.indexFlight(flight);
         return flight;
@@ -330,8 +341,13 @@ public class FlightResource {
             params.add("%" + seatNumber.trim().toUpperCase() + "%");
         }
         if (booked != null) {
-            clauses.add("booked = ?" + (params.size() + 1));
-            params.add(booked);
+            if (booked) {
+                clauses.add("upper(status) = ?" + (params.size() + 1));
+                params.add("BOOKED");
+            } else {
+                clauses.add("upper(status) = ?" + (params.size() + 1));
+                params.add("AVAILABLE");
+            }
         }
         if (clauses.isEmpty()) {
             return Seat.listAll();
@@ -344,6 +360,12 @@ public class FlightResource {
     @RolesAllowed("ADMIN")
     @Transactional
     public Seat addSeat(Seat x) {
+        if (x.status == null || x.status.isBlank()) {
+            x.status = "AVAILABLE";
+        } else {
+            x.status = normalizeSeatStatus(x.status);
+        }
+        x.booked = "BOOKED".equals(x.status);
         x.persist();
         flightCacheService.invalidateSeatAvailability(x.flightId, x.seatNumber);
         return x;
@@ -355,7 +377,13 @@ public class FlightResource {
     public boolean available(@QueryParam("flightId") Long flightId, @QueryParam("seatNumber") String seatNumber) {
         return flightCacheService.seatAvailability(flightId, seatNumber, () -> {
             Seat s = Seat.find("flightId=?1 and seatNumber=?2", flightId, seatNumber).firstResult();
-            return s != null && !s.booked;
+            if (s == null) {
+                return false;
+            }
+            if (s.status == null || s.status.isBlank()) {
+                s.status = s.booked ? "BOOKED" : "AVAILABLE";
+            }
+            return "AVAILABLE".equalsIgnoreCase(s.status);
         });
     }
 
@@ -366,10 +394,90 @@ public class FlightResource {
     public Seat book(@PathParam("id") Long id) {
         Seat s = Seat.findById(id);
         if (s != null) {
+            s.status = "BOOKED";
             s.booked = true;
             flightCacheService.invalidateSeatAvailability(s.flightId, s.seatNumber);
         }
         return s;
+    }
+
+    @PUT
+    @Path("/seats/hold")
+    @PermitAll
+    @Transactional
+    public Seat holdSeat(@QueryParam("flightId") Long flightId, @QueryParam("seatNumber") String seatNumber) {
+        Seat seat = findSeatOrThrow(flightId, seatNumber);
+        String status = normalizeSeatStatus(seat.status);
+        if (!"AVAILABLE".equals(status)) {
+            throw new BadRequestException("Seat is not available");
+        }
+        seat.status = "HELD";
+        seat.booked = false;
+        flightCacheService.invalidateSeatAvailability(seat.flightId, seat.seatNumber);
+        return seat;
+    }
+
+    @PUT
+    @Path("/seats/confirm")
+    @PermitAll
+    @Transactional
+    public Seat confirmSeat(@QueryParam("flightId") Long flightId, @QueryParam("seatNumber") String seatNumber) {
+        Seat seat = findSeatOrThrow(flightId, seatNumber);
+        String status = normalizeSeatStatus(seat.status);
+        if ("BOOKED".equals(status)) {
+            return seat;
+        }
+        if (!"HELD".equals(status)) {
+            throw new BadRequestException("Seat is not held");
+        }
+        seat.status = "BOOKED";
+        seat.booked = true;
+        flightCacheService.invalidateSeatAvailability(seat.flightId, seat.seatNumber);
+        return seat;
+    }
+
+    @PUT
+    @Path("/seats/release")
+    @PermitAll
+    @Transactional
+    public Seat releaseSeat(@QueryParam("flightId") Long flightId, @QueryParam("seatNumber") String seatNumber) {
+        Seat seat = findSeatOrThrow(flightId, seatNumber);
+        String status = normalizeSeatStatus(seat.status);
+        if ("AVAILABLE".equals(status)) {
+            return seat;
+        }
+        if ("BOOKED".equals(status)) {
+            throw new BadRequestException("Booked seat cannot be released directly");
+        }
+        seat.status = "AVAILABLE";
+        seat.booked = false;
+        flightCacheService.invalidateSeatAvailability(seat.flightId, seat.seatNumber);
+        return seat;
+    }
+
+    private Seat findSeatOrThrow(Long flightId, String seatNumber) {
+        if (flightId == null || seatNumber == null || seatNumber.isBlank()) {
+            throw new BadRequestException("flightId and seatNumber are required");
+        }
+        Seat seat = Seat.find("flightId=?1 and upper(seatNumber)=?2", flightId, seatNumber.trim().toUpperCase(Locale.ROOT)).firstResult();
+        if (seat == null) {
+            throw new NotFoundException("Seat not found");
+        }
+        if (seat.status == null || seat.status.isBlank()) {
+            seat.status = seat.booked ? "BOOKED" : "AVAILABLE";
+        }
+        return seat;
+    }
+
+    private String normalizeSeatStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "AVAILABLE";
+        }
+        String normalized = status.trim().toUpperCase(Locale.ROOT);
+        if (!normalized.equals("AVAILABLE") && !normalized.equals("HELD") && !normalized.equals("BOOKED")) {
+            throw new BadRequestException("Invalid seat status");
+        }
+        return normalized;
     }
 
     private String uploadToCloudinary(ImageUploadForm form, String folder) {
@@ -388,5 +496,12 @@ public class FlightResource {
         } catch (IOException e) {
             throw new BadRequestException("Cannot read upload file");
         }
+    }
+
+    private String normalizeCurrency(String currency) {
+        if (currency == null || currency.isBlank()) {
+            return "VND";
+        }
+        return currency.trim().toUpperCase(Locale.ROOT);
     }
 }

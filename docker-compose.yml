@@ -203,6 +203,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       FLIGHT_SERVICE_URL: http://flight-service:8081
       PASSENGER_SERVICE_URL: http://passenger-service:8082
+      PAYMENT_SERVICE_URL: http://payment-service:8084
       REDIS_URL: redis://redis:6379
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8083/q/swagger-ui/ > /dev/null"]

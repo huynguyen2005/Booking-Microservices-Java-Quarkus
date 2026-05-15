@@ -24,6 +24,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.time.Instant;
 
 @Path("/api/payments")
 @Produces(MediaType.APPLICATION_JSON)
@@ -93,11 +94,12 @@ public class PaymentResource {
             assertOwnership(found);
             if (found == null) { throw new NotFoundException(); }
             found.status = "PAID";
+            found.paidAt = Instant.now();
             found.persistAndFlush();
             return found;
         });
         PaymentCompletedEvent e = new PaymentCompletedEvent();
-        e.paymentId = p.id; e.userId = p.userId; e.bookingId = p.bookingId; e.passengerId = p.passengerId; e.flightId = p.flightId; e.status = p.status;
+        e.paymentId = p.id; e.userId = p.userId; e.bookingId = p.bookingId; e.passengerId = p.passengerId; e.flightId = p.flightId; e.seatNumber = p.seatNumber; e.status = p.status;
         completed.send(e);
         return p;
     }
@@ -109,6 +111,7 @@ public class PaymentResource {
             assertOwnership(found);
             if (found == null) { throw new NotFoundException(); }
             found.status = "FAILED";
+            found.paidAt = null;
             found.persistAndFlush();
             return found;
         });
@@ -124,6 +127,7 @@ public class PaymentResource {
             Payment found = Payment.findById(id);
             if (found == null) { throw new NotFoundException(); }
             found.status = "FAILED";
+            found.paidAt = null;
             found.persistAndFlush();
             return found;
         });

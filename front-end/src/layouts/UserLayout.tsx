@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+﻿import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { Plane, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { DarkModeToggle } from '../components/ui/DarkModeToggle';
@@ -40,7 +40,7 @@ export default function UserLayout() {
               Check-in
             </Link>
             <DarkModeToggle />
-            
+
             {user ? (
               <div className="relative" ref={menuRef}>
                 <button

@@ -51,6 +51,14 @@ public class CheckinResource {
 
     @POST @Transactional @RolesAllowed({"USER", "ADMIN"})
     public Checkin checkin(Checkin c, @Context HttpHeaders headers){
+        if (c == null || c.ticketCode == null || c.ticketCode.isBlank()) {
+            throw new WebApplicationException("ticketCode is required", 400);
+        }
+        Checkin existing = Checkin.find("ticketCode", c.ticketCode).firstResult();
+        if (existing != null) {
+            assertOwnership(existing);
+            throw new WebApplicationException("Ticket already checked in", 409);
+        }
         String authorization = headers.getHeaderString("Authorization");
         TicketView ticket = ticketClient.byCode(c.ticketCode, authorization);
         assertOwnership(ticket);

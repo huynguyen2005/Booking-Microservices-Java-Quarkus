@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+﻿import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { flightApi, Flight, Airport, Airplane, Seat } from '../api/endpoints';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -15,7 +15,7 @@ export default function FlightDetailPage() {
   const { data: flight, isLoading } = useQuery<Flight | null>({ queryKey: ['flight', flightId], queryFn: () => flightApi.getFlightById(flightId), enabled: !!flightId });
   const { data: airports } = useQuery<Airport[]>({ queryKey: ['airports'], queryFn: flightApi.getAirports });
   const { data: airplanes } = useQuery<Airplane[]>({ queryKey: ['airplanes'], queryFn: flightApi.getAirplanes });
-  const { data: seats } = useQuery<Seat[]>({ queryKey: ['seats', flightId], queryFn: () => flightApi.getSeats(flightId), enabled: !!flightId && !!user });
+  const { data: seats } = useQuery<Seat[]>({ queryKey: ['seats', flightId], queryFn: () => flightApi.getSeats({ flightId }), enabled: !!flightId && !!user });
 
   const airportMap: Record<number, Airport> = {};
   airports?.forEach(a => { airportMap[a.id] = a; });
@@ -25,7 +25,11 @@ export default function FlightDetailPage() {
   const depAirport = flight?.departureAirportId ? airportMap[flight.departureAirportId] : null;
   const arrAirport = flight?.arrivalAirportId ? airportMap[flight.arrivalAirportId] : null;
   const airplane = flight?.airplaneId ? airplaneMap[flight.airplaneId] : null;
-  const availableSeats = seats?.filter(s => !s.booked) ?? [];
+  const isSeatUnavailable = (seat: Seat) => {
+    const st = (seat.status ?? '').toUpperCase();
+    return seat.booked || st === 'HELD' || st === 'BOOKED';
+  };
+  const availableSeats = seats?.filter(s => !isSeatUnavailable(s)) ?? [];
 
   const handleBook = () => {
     if (!user) { navigate('/login'); return; }
@@ -47,7 +51,6 @@ export default function FlightDetailPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       <Link to="/flights" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] mb-6 inline-block">← Quay lại danh sách chuyến bay</Link>
 
-      {/* Hero card */}
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-md)] overflow-hidden">
         {flight.imageUrl && <img src={flight.imageUrl} alt="" className="w-full h-48 object-cover" />}
         <div className="p-6 sm:p-8">
@@ -62,7 +65,6 @@ export default function FlightDetailPage() {
             </Button>
           </div>
 
-          {/* Route */}
           <div className="grid sm:grid-cols-3 gap-6 mb-8">
             <div className="text-center sm:text-left">
               <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Khởi hành</p>
@@ -81,21 +83,20 @@ export default function FlightDetailPage() {
             </div>
           </div>
 
-          {/* Info */}
           <div className="grid sm:grid-cols-2 gap-4 text-sm border-t border-[var(--color-border)] pt-6">
             <div><span className="text-[var(--color-text-muted)]">Máy bay:</span> <span className="font-medium">{airplane ? `${airplane.code} — ${airplane.model}` : 'N/A'}</span></div>
-            <div><span className="text-[var(--color-text-muted)]">Tổng ghế:</span> <span className="font-medium">{airplane?.totalSeats ?? '—'}</span></div>
+            <div><span className="text-[var(--color-text-muted)]">Sức chứa máy bay:</span> <span className="font-medium">{airplane?.totalSeats ?? '—'}</span></div>
+            <div><span className="text-[var(--color-text-muted)]">Ghế đã mở bán:</span> <span className="font-medium">{seats?.length ?? '—'}</span></div>
           </div>
         </div>
       </div>
 
-      {/* Seats section — only visible to logged-in users */}
       {user && seats && (
         <div className="mt-8 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-6">
           <h2 className="text-lg font-semibold mb-4">Ghế ngồi ({availableSeats.length} còn trống / {seats.length} tổng)</h2>
           <div className="flex flex-wrap gap-2">
             {seats.map(s => (
-              <div key={s.id} className={`w-12 h-10 flex items-center justify-center text-xs font-mono rounded-md border transition-all ${s.booked ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] opacity-50 cursor-not-allowed' : 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)] hover:scale-105 cursor-pointer'}`}>
+              <div key={s.id} className={`w-12 h-10 flex items-center justify-center text-xs font-mono rounded-md border transition-all ${isSeatUnavailable(s) ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] opacity-50 cursor-not-allowed' : 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)] hover:scale-105 cursor-pointer'}`}>
                 {s.seatNumber ?? '?'}
               </div>
             ))}

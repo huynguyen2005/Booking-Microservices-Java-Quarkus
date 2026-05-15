@@ -16,7 +16,10 @@ export default function MyTicketsPage() {
     if (!searchCode.trim()) return;
     setSearching(true);
     try {
-      const t = await ticketApi.getByCode(searchCode.trim());
+      const [t] = await ticketApi.search({ ticketCode: searchCode.trim() });
+      if (!t) {
+        throw new Error('NOT_FOUND');
+      }
       setSearchResult(t);
     } catch {
       toast.error('Không tìm thấy vé với mã này.');
