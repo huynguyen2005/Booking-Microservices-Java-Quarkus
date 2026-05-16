@@ -40,7 +40,7 @@ export default function AdminCheckinsPage() {
     { key: 'id', header: 'ID' },
     { key: 'userId', header: 'Người dùng', render: c => userMap[c.userId]?.fullName ?? EMPTY_VALUE },
     { key: 'ticketCode', header: 'Mã vé', render: c => <span className="font-mono font-bold text-[var(--color-primary)]">{c.ticketCode || EMPTY_VALUE}</span> },
-    { key: 'bookingId', header: 'Đặt chỗ', render: c => String(c.bookingId ?? EMPTY_VALUE) },
+    { key: 'bookingId', header: 'Đặt chỗ', render: c => String(bookingMap[c.bookingId]?.id ?? c.bookingId ?? EMPTY_VALUE) },
     { key: 'passengerId', header: 'Hành khách', render: c => passengerMap[c.passengerId]?.fullName ?? EMPTY_VALUE },
     { key: 'flightId', header: 'Chuyến bay', render: c => flightMap[c.flightId]?.flightNumber ?? EMPTY_VALUE },
     { key: 'status', header: 'Trạng thái', render: c => <StatusBadge status={c.status} /> },
