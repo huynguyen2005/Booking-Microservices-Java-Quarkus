@@ -235,6 +235,10 @@ Frontend gọi API qua Gateway: `http://localhost:8080`
 - `GET /api/flights/{id}`
 - `GET /api/flights/search?keyword=&departureAirportId=&arrivalAirportId=&airplaneId=&status=&departureFrom=&departureTo=&page=&size=&sortBy=&sortDir=`
 - `GET /api/seats?flightId=&seatNumber=&booked=`
+- `POST /api/seats` (ADMIN)
+- `PUT /api/seats/{id}` (ADMIN)
+- `DELETE /api/seats/{id}` (ADMIN)
+- `PUT /api/seats/{id}` (ADMIN, có thể đặt `status=BOOKED`)
 - `GET /api/seats/availability`
 
 Flight payload fields mới:
@@ -242,13 +246,13 @@ Flight payload fields mới:
 - `currency` (string): đơn vị tiền, mặc định `VND`
 
 ### Passenger
-- `GET /api/passengers`
-- `GET /api/passengers/me`
-- `GET /api/passengers/{id}`
-- `GET /api/passengers/search?keyword=`
+- `GET /api/passengers` (chỉ trả passenger chưa bị xóa mềm)
+- `GET /api/passengers/me` (chỉ trả passenger chưa bị xóa mềm)
+- `GET /api/passengers/{id}` (404 nếu passenger đã xóa mềm)
+- `GET /api/passengers/search?keyword=` (chỉ tìm trên passenger chưa bị xóa mềm)
 - `POST /api/passengers`
-- `PUT /api/passengers/{id}`
-- `DELETE /api/passengers/{id}`
+- `PUT /api/passengers/{id}` (USER: chỉ sửa passenger của chính mình; ADMIN bị chặn)
+- `DELETE /api/passengers/{id}` (soft delete: đánh dấu `deleted=true`, không xóa vật lý)
 
 ### Booking/Payment/Ticket/Checkin
 - `GET /api/bookings`
@@ -369,3 +373,4 @@ mvn clean package -DskipTests
 - Không commit `.env` thật lên GitHub.
 - Rotate secret nếu lộ thông tin.
 - Production nên dùng secret manager.
+

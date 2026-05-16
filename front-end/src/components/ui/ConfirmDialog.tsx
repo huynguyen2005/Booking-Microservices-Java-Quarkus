@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+﻿import { AlertTriangle } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 

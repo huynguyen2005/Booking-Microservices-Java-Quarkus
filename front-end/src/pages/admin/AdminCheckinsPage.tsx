@@ -28,16 +28,16 @@ export default function AdminCheckinsPage() {
     { key: 'ticketCode', header: 'Mã vé', render: c => <span className="font-mono font-bold text-[var(--color-primary)]">{c.ticketCode}</span> },
     { key: 'bookingId', header: 'Booking', render: c => bookingMap[c.bookingId]?.bookingCode ?? c.bookingId },
     { key: 'passengerId', header: 'Hành khách', render: c => passengerMap[c.passengerId]?.fullName ?? c.passengerId },
-    { key: 'flightId', header: 'Chuy?n bay', render: c => flightMap[c.flightId]?.flightNumber ?? c.flightId },
-    { key: 'status', header: 'Tr?ng thái', render: c => <StatusBadge status={c.status} /> },
+    { key: 'flightId', header: 'Chuyến bay', render: c => flightMap[c.flightId]?.flightNumber ?? c.flightId },
+    { key: 'status', header: 'Trạng thái', render: c => <StatusBadge status={c.status} /> },
   ];
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">Qu?n lý check-in</h1>
+      <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">Quản lý check-in</h1>
       <div className="grid md:grid-cols-3 gap-2 mb-4">
         <input placeholder="Ticket code" value={ticketCode} onChange={e => setTicketCode(e.target.value)} />
-        <select value={status} onChange={e => setStatus(e.target.value)}><option value="">T?t c? tr?ng thái</option><option value="CHECKED_IN">CHECKED_IN</option></select>
+        <select value={status} onChange={e => setStatus(e.target.value)}><option value="">Tất cả trạng thái</option><option value="CHECKED_IN">CHECKED_IN</option></select>
         <input placeholder="Flight ID" value={flightId} onChange={e => setFlightId(e.target.value)} />
       </div>
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] shadow-sm overflow-hidden">

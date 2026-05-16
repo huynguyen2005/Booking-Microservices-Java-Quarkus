@@ -77,7 +77,7 @@ export default function AdminLayout() {
       <main className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Header */}
         <header className="h-16 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between px-8 sticky top-0 z-10 backdrop-blur-md bg-opacity-90">
-          <h2 className="text-lg font-bold text-[var(--color-text-main)]">Admin Portal</h2>
+          <h2 className="text-lg font-bold text-[var(--color-text-main)]">Trang quản trị</h2>
           <div className="flex items-center gap-3">
             <DarkModeToggle />
             <div className="h-8 w-8 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center">

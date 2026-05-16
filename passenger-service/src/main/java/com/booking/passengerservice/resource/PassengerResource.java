@@ -7,18 +7,19 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import java.time.Instant;
 import java.util.List;
 
 @Path("/api/passengers")
@@ -33,14 +34,14 @@ public class PassengerResource {
     @GET
     @RolesAllowed("ADMIN")
     public List<Passenger> all() {
-        return Passenger.listAll();
+        return Passenger.list("deleted = false");
     }
 
     @GET
     @Path("/me")
     @RolesAllowed({"USER", "ADMIN"})
     public List<Passenger> me() {
-        return Passenger.list("userId", currentUserId());
+        return Passenger.list("userId = ?1 and deleted = false", currentUserId());
     }
 
     @GET
@@ -51,14 +52,21 @@ public class PassengerResource {
         String like = "%" + q.toLowerCase() + "%";
         if (isAdmin()) {
             if (q.isEmpty()) {
-                return Passenger.listAll();
+                return Passenger.list("deleted = false");
             }
-            return Passenger.find("lower(fullName) like ?1 or lower(email) like ?1 or lower(passportNumber) like ?1", like).list();
+            return Passenger.find(
+                    "deleted = false and (lower(fullName) like ?1 or lower(email) like ?1 or lower(passportNumber) like ?1)",
+                    like
+            ).list();
         }
         if (q.isEmpty()) {
-            return Passenger.list("userId", currentUserId());
+            return Passenger.list("userId = ?1 and deleted = false", currentUserId());
         }
-        return Passenger.find("userId = ?1 and (lower(fullName) like ?2 or lower(email) like ?2 or lower(passportNumber) like ?2)", currentUserId(), like).list();
+        return Passenger.find(
+                "userId = ?1 and deleted = false and (lower(fullName) like ?2 or lower(email) like ?2 or lower(passportNumber) like ?2)",
+                currentUserId(),
+                like
+        ).list();
     }
 
     @GET
@@ -81,6 +89,8 @@ public class PassengerResource {
         } else {
             p.userId = currentUserId();
         }
+        p.deleted = false;
+        p.deletedAt = null;
         p.persist();
         return p;
     }
@@ -90,15 +100,15 @@ public class PassengerResource {
     @RolesAllowed({"USER", "ADMIN"})
     @Transactional
     public Passenger update(@PathParam("id") Long id, Passenger input) {
+        if (isAdmin()) {
+            throw new ForbiddenException("Admin không được sửa thông tin passenger");
+        }
         Passenger passenger = findByIdOrThrow(id);
         assertOwnership(passenger);
         passenger.fullName = input.fullName;
         passenger.email = input.email;
         passenger.phone = input.phone;
         passenger.passportNumber = input.passportNumber;
-        if (isAdmin() && input.userId != null) {
-            passenger.userId = input.userId;
-        }
         return passenger;
     }
 
@@ -109,11 +119,12 @@ public class PassengerResource {
     public void delete(@PathParam("id") Long id) {
         Passenger passenger = findByIdOrThrow(id);
         assertOwnership(passenger);
-        passenger.delete();
+        passenger.deleted = true;
+        passenger.deletedAt = Instant.now();
     }
 
     private Passenger findByIdOrThrow(Long id) {
-        Passenger passenger = Passenger.findById(id);
+        Passenger passenger = Passenger.find("id = ?1 and deleted = false", id).firstResult();
         if (passenger == null) {
             throw new NotFoundException("Passenger not found");
         }

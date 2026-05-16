@@ -8,6 +8,13 @@ import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components/ui/Toast';
 
+const formatServerDateTime = (value?: string | null) => {
+  if (!value) return '—';
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value);
+  const parsed = new Date(hasTimezone ? value : `${value}Z`);
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+};
+
 export default function MyBookingsPage() {
   const qc = useQueryClient();
   const [cancelId, setCancelId] = useState<number | null>(null);
@@ -94,8 +101,8 @@ export default function MyBookingsPage() {
                   <span>Số hộ chiếu: <span className="font-medium text-[var(--color-text-main)]">{passenger?.passportNumber || 'Chưa cập nhật'}</span></span>
                   <span>Trạng thái thanh toán: <span className="font-medium text-[var(--color-text-main)]">{paymentStatusText(payment?.status)}</span></span>
                   <span>Số tiền: <span className="font-medium text-[var(--color-text-main)]">{formatMoney(payment?.amount, payment?.currency)}</span></span>
-                  <span>Tạo lúc: <span className="font-medium text-[var(--color-text-main)]">{b.createdAt ? new Date(b.createdAt).toLocaleString('vi-VN') : '—'}</span></span>
-                  <span>Cập nhật lúc: <span className="font-medium text-[var(--color-text-main)]">{b.updatedAt ? new Date(b.updatedAt).toLocaleString('vi-VN') : '—'}</span></span>
+                  <span>Tạo lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.createdAt)}</span></span>
+                  <span>Cập nhật lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.updatedAt)}</span></span>
                 </div>
               </div>
             );

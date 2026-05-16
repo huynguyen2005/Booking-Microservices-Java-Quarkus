@@ -34,33 +34,33 @@ export default function AdminUsersPage() {
   const updateMut = useMutation({
     mutationFn: (d: { id: number; payload: any }) => adminApi.updateUser(d.id, d.payload),
     onSuccess: () => {
-      toast.success('C?p nh?t ngu?i dùng thành công');
+      toast.success('Cập nhật người dùng thành công');
       setEditModal(false);
       qc.invalidateQueries({ queryKey: ['adminUsers'] });
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || e.response?.data || 'Có l?i x?y ra'),
+    onError: (e: any) => toast.error(e.response?.data?.message || e.response?.data || 'Có lỗi xảy ra'),
   });
 
   const deleteMut = useMutation({
     mutationFn: adminApi.deleteUser,
     onSuccess: () => {
-      toast.success('Ðã xóa ngu?i dùng');
+      toast.success('Đã xóa người dùng');
       setDeleteId(null);
       qc.invalidateQueries({ queryKey: ['adminUsers'] });
     },
     onError: (e: any) => {
-      toast.error(e.response?.data?.message || e.response?.data || 'Có l?i x?y ra');
+      toast.error(e.response?.data?.message || e.response?.data || 'Có lỗi xảy ra');
       setDeleteId(null);
     },
   });
 
   const columns: Column<User>[] = useMemo(() => [
     { key: 'id', header: 'ID' },
-    { key: 'fullName', header: 'H? tên', render: u => <span className="font-medium">{u.fullName}</span> },
+    { key: 'fullName', header: 'Họ tên', render: u => <span className="font-medium">{u.fullName}</span> },
     { key: 'email', header: 'Email' },
-    { key: 'phone', header: 'SÐT', render: u => u.phone ?? '-' },
+    { key: 'phone', header: 'SĐT', render: u => u.phone ?? '-' },
     { key: 'role', header: 'Vai trò', render: u => <StatusBadge status={u.role} /> },
-    { key: 'createdAt', header: 'Ngày t?o', render: u => <span className="text-xs">{new Date(u.createdAt).toLocaleDateString('vi-VN')}</span> },
+    { key: 'createdAt', header: 'Ngày tạo', render: u => <span className="text-xs">{new Date(u.createdAt).toLocaleDateString('vi-VN')}</span> },
     {
       key: '_actions',
       header: '',
@@ -77,14 +77,14 @@ export default function AdminUsersPage() {
   return (
     <div className="animate-fade-in">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-text-main)]">Qu?n lý ngu?i dùng</h1>
+        <h1 className="text-2xl font-bold text-[var(--color-text-main)]">Quản lý người dùng</h1>
         <div className="flex gap-2 items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
             <input className="pl-9 w-64" placeholder="Tìm theo tên/email" value={keyword} onChange={e => setKeyword(e.target.value)} />
           </div>
           <select value={role} onChange={e => setRole((e.target.value || '') as Role | '')} className="w-36">
-            <option value="">T?t c? vai trò</option>
+            <option value="">Tất cả vai trò</option>
             <option value="USER">USER</option>
             <option value="ADMIN">ADMIN</option>
           </select>
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
         {isLoading ? <div className="p-6"><TableSkeleton rows={5} cols={6} /></div> : <DataTable columns={columns} data={users ?? []} pageSize={10} />}
       </div>
 
-      <Modal open={editModal} onClose={() => setEditModal(false)} title="C?p nh?t ngu?i dùng">
+      <Modal open={editModal} onClose={() => setEditModal(false)} title="Cập nhật người dùng">
         <form onSubmit={e => {
           e.preventDefault();
           if (!editId) return;
@@ -103,17 +103,16 @@ export default function AdminUsersPage() {
           if (form.password) payload.password = form.password;
           updateMut.mutate({ id: editId, payload });
         }} className="space-y-4">
-          <div><label className="block text-sm font-medium mb-1.5">H? tên</label><input value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1.5">Họ tên</label><input value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1.5">Email</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium mb-1.5">SÐT</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium mb-1.5">M?t kh?u m?i (không b?t bu?c)</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1.5">SĐT</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1.5">Mật khẩu mới (không bắt buộc)</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1.5">Vai trò</label><select value={form.role} onChange={e => setForm({ ...form, role: e.target.value as Role })}><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select></div>
-          <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="ghost" onClick={() => setEditModal(false)}>H?y</Button><Button type="submit" disabled={updateMut.isPending}>Luu</Button></div>
+          <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="ghost" onClick={() => setEditModal(false)}>Hủy</Button><Button type="submit" disabled={updateMut.isPending}>Lưu</Button></div>
         </form>
       </Modal>
 
-      <ConfirmDialog open={deleteId !== null} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMut.mutate(deleteId)} title="Xóa ngu?i dùng" message="B?n có ch?c ch?n mu?n xóa ngu?i dùng này?" confirmText="Xóa" variant="danger" loading={deleteMut.isPending} />
+      <ConfirmDialog open={deleteId !== null} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && deleteMut.mutate(deleteId)} title="Xóa người dùng" message="Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác." confirmText="Xóa" variant="danger" loading={deleteMut.isPending} />
     </div>
   );
 }
-

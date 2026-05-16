@@ -19,6 +19,8 @@ export interface Passenger {
   email: string | null;
   phone: string | null;
   passportNumber: string | null;
+  deleted?: boolean;
+  deletedAt?: string | null;
 }
 
 export interface Airport {
@@ -138,8 +140,19 @@ function unwrapList<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) {
     return payload as T[];
   }
-  if (payload && typeof payload === 'object' && Array.isArray((payload as { content?: unknown[] }).content)) {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    Array.isArray((payload as { content?: unknown[] }).content)
+  ) {
     return (payload as { content: T[] }).content;
+  }
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    Array.isArray((payload as { items?: unknown[] }).items)
+  ) {
+    return (payload as { items: T[] }).items;
   }
   return [];
 }
@@ -225,9 +238,10 @@ export const flightApi = {
   getSeats: (params?: { flightId?: number; seatNumber?: string; booked?: boolean }) =>
     http.get<Seat[]>(`/api/seats${queryString(params ?? {})}`).then(r => r.data),
   createSeat: (data: { flightId: number; seatNumber: string }) => http.post<Seat>('/api/seats', data).then(r => r.data),
+  updateSeat: (id: number, data: Partial<Seat>) => http.put<Seat>(`/api/seats/${id}`, data).then(r => r.data),
+  deleteSeat: (id: number) => http.delete(`/api/seats/${id}`).then(r => r.data),
   checkAvailability: (flightId: number, seatNumber: string) =>
     http.get<boolean>(`/api/seats/availability${queryString({ flightId, seatNumber })}`).then(r => r.data),
-  bookSeat: (id: number) => http.put(`/api/seats/${id}/book`).then(r => r.data),
 };
 
 export const passengerApi = {

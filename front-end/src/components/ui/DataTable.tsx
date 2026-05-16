@@ -22,7 +22,7 @@ export function DataTable<T extends Record<string, any>>({
   data,
   pageSize = 10,
   onRowClick,
-  emptyMessage = 'Không có d? li?u.',
+  emptyMessage = 'Không có dữ liệu.',
 }: DataTableProps<T>) {
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -111,7 +111,7 @@ export function DataTable<T extends Record<string, any>>({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border)]">
           <span className="text-xs text-[var(--color-text-muted)]">
-            Hi?n th? {safePage * pageSize + 1}-{Math.min((safePage + 1) * pageSize, sorted.length)} / {sorted.length}
+            Hiển thị {safePage * pageSize + 1}-{Math.min((safePage + 1) * pageSize, sorted.length)} / {sorted.length}
           </span>
           <div className="flex items-center gap-1">
             <button

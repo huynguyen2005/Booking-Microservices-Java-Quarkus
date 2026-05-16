@@ -15,7 +15,7 @@
    - *Risk*: Admin cannot view real bookings, blocking management operations.
 4. **Admin Seats Page mock UI**:
    - *File*: `src/pages/admin/AdminSeatsPage.tsx`
-   - *API*: `GET /api/seats`, `POST /api/seats`, `PUT /api/seats/{id}/book`
+   - *API*: `GET /api/seats`, `POST /api/seats`, `PUT /api/seats/{id}`
    - *Risk*: Admin cannot create or view seats for flights.
 
 ## P1 (Important - Missing functionality)

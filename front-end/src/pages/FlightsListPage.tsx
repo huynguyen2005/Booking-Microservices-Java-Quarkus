@@ -174,7 +174,7 @@ export default function FlightsListPage() {
             return (
               <Link key={f.id} to={`/flights/${f.id}`} className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] hover:shadow-[var(--shadow-md)] transition-all hover:border-[var(--color-primary)] group">
                 <div className="flex flex-col sm:flex-row items-stretch">
-                  {f.imageUrl && <img src={f.imageUrl} alt="" className="w-full sm:w-40 h-32 sm:h-auto object-cover rounded-t-[var(--radius-md)] sm:rounded-l-[var(--radius-md)] sm:rounded-tr-none" />}
+                  {f.imageUrl && <img src={f.imageUrl} alt={`Ảnh chuyến bay ${f.flightNumber ?? ''}`} className="w-full sm:w-40 h-32 sm:h-auto object-cover rounded-t-[var(--radius-md)] sm:rounded-l-[var(--radius-md)] sm:rounded-tr-none" />}
                   <div className="flex-1 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">

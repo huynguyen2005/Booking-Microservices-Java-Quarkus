@@ -32,12 +32,12 @@ Field mới cần hiển thị:
 - Upload avatar: `POST /api/users/me/avatar` (multipart, key `file`)
 
 ### 2.2 Quản lý Passenger (của chính user)
-- Danh sách của tôi: `GET /api/passengers/me`
-- Chi tiết: `GET /api/passengers/{id}`
-- Tìm kiếm: `GET /api/passengers/search?keyword=`
+- Danh sách của tôi: `GET /api/passengers/me` (chỉ trả bản ghi chưa xóa mềm)
+- Chi tiết: `GET /api/passengers/{id}` (404 nếu đã xóa mềm)
+- Tìm kiếm: `GET /api/passengers/search?keyword=` (chỉ tìm bản ghi chưa xóa mềm)
 - Tạo: `POST /api/passengers`
-- Cập nhật: `PUT /api/passengers/{id}`
-- Xóa: `DELETE /api/passengers/{id}`
+- Cập nhật: `PUT /api/passengers/{id}` (chỉ USER sở hữu passenger đó được sửa)
+- Xóa: `DELETE /api/passengers/{id}` (soft delete)
 
 ### 2.3 Ghế/chuyến bay để đặt vé
 - Danh sách ghế: `GET /api/seats?flightId=&seatNumber=&booked=`
@@ -131,7 +131,9 @@ Payload khuyến nghị khi tạo/cập nhật Flight:
 
 ### 3.6 Seat Management
 - Tạo ghế: `POST /api/seats`
-- Book ghế thủ công: `PUT /api/seats/{id}/book`
+- Cập nhật ghế: `PUT /api/seats/{id}`
+- Xóa ghế: `DELETE /api/seats/{id}`
+- Đánh dấu ghế BOOKED thủ công: `PUT /api/seats/{id}` với payload `status=BOOKED`
 
 ### 3.7 Booking/Payment/Ticket/Checkin Admin Views
 - Bookings toàn hệ thống: `GET /api/bookings`
@@ -184,3 +186,4 @@ Payload khuyến nghị khi tạo/cập nhật Flight:
 - Khi payment success/fail, nên refresh/poll booking + ticket vài giây do flow async qua RabbitMQ.
 - Với lỗi backend, ưu tiên hiển thị message trả về (plain text hoặc JSON message).
 - Upload ảnh dùng multipart/form-data, giới hạn file ảnh hợp lệ (`jpeg/png/webp`, <= 5MB).
+

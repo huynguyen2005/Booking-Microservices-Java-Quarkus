@@ -52,7 +52,7 @@ export default function FlightDetailPage() {
       <Link to="/flights" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] mb-6 inline-block">← Quay lại danh sách chuyến bay</Link>
 
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-md)] overflow-hidden">
-        {flight.imageUrl && <img src={flight.imageUrl} alt="" className="w-full h-48 object-cover" />}
+        {flight.imageUrl && <img src={flight.imageUrl} alt={`Ảnh chuyến bay ${flight.flightNumber ?? ''}`} className="w-full h-48 object-cover" />}
         <div className="p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
@@ -65,20 +65,34 @@ export default function FlightDetailPage() {
             </Button>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-6 mb-8">
-            <div className="text-center sm:text-left">
+          <div className="grid sm:grid-cols-3 gap-6 mb-8 items-start">
+            <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
               <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Khởi hành</p>
               <p className="text-lg font-bold text-[var(--color-text-main)]">{depAirport?.code ?? '?'}</p>
               <p className="text-sm text-[var(--color-text-muted)]">{depAirport?.name ?? ''}</p>
-              <div className="flex items-center gap-1 mt-1 justify-center sm:justify-start"><MapPin className="w-3 h-3" /><span className="text-xs text-[var(--color-text-muted)]">{depAirport?.city ?? ''}</span></div>
+              {depAirport?.imageUrl && (
+                <img
+                  src={depAirport.imageUrl}
+                  alt={`Ảnh sân bay ${depAirport.code ?? ''}`}
+                  className="mt-2 w-[240px] h-[130px] object-cover rounded-md border border-[var(--color-border)]"
+                />
+              )}
+              <div className="flex items-center gap-1 mt-2 justify-center sm:justify-start"><MapPin className="w-3 h-3" /><span className="text-xs text-[var(--color-text-muted)]">{depAirport?.city ?? ''}</span></div>
               {flight.departureTime && <div className="flex items-center gap-1 mt-1 justify-center sm:justify-start"><Clock className="w-3 h-3" /><span className="text-xs">{new Date(flight.departureTime).toLocaleString('vi-VN')}</span></div>}
             </div>
             <div className="flex items-center justify-center"><ArrowRight className="w-6 h-6 text-[var(--color-primary)]" /></div>
-            <div className="text-center sm:text-right">
+            <div className="text-center sm:text-right flex flex-col items-center sm:items-end">
               <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Đến</p>
               <p className="text-lg font-bold text-[var(--color-text-main)]">{arrAirport?.code ?? '?'}</p>
               <p className="text-sm text-[var(--color-text-muted)]">{arrAirport?.name ?? ''}</p>
-              <div className="flex items-center gap-1 mt-1 justify-center sm:justify-end"><MapPin className="w-3 h-3" /><span className="text-xs text-[var(--color-text-muted)]">{arrAirport?.city ?? ''}</span></div>
+              {arrAirport?.imageUrl && (
+                <img
+                  src={arrAirport.imageUrl}
+                  alt={`Ảnh sân bay ${arrAirport.code ?? ''}`}
+                  className="mt-2 w-[240px] h-[130px] object-cover rounded-md border border-[var(--color-border)]"
+                />
+              )}
+              <div className="flex items-center gap-1 mt-2 justify-center sm:justify-end"><MapPin className="w-3 h-3" /><span className="text-xs text-[var(--color-text-muted)]">{arrAirport?.city ?? ''}</span></div>
               {flight.arrivalTime && <div className="flex items-center gap-1 mt-1 justify-center sm:justify-end"><Clock className="w-3 h-3" /><span className="text-xs">{new Date(flight.arrivalTime).toLocaleString('vi-VN')}</span></div>}
             </div>
           </div>

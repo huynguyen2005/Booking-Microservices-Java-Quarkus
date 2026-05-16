@@ -22,14 +22,14 @@ export default function AdminBookingsPage() {
     { key: 'userId', header: 'User ID' },
     { key: 'passengerId', header: 'Passenger ID' },
     { key: 'flightId', header: 'Flight ID' },
-    { key: 'seatNumber', header: 'Gh?', render: b => <span className="font-mono font-bold">{b.seatNumber}</span> },
-    { key: 'status', header: 'Tr?ng thái', render: b => <StatusBadge status={b.status} /> },
+    { key: 'seatNumber', header: 'Ghế', render: b => <span className="font-mono font-bold">{b.seatNumber}</span> },
+    { key: 'status', header: 'Trạng thái', render: b => <StatusBadge status={b.status} /> },
   ], []);
 
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-text-main)]">Qu?n lý booking</h1>
+        <h1 className="text-2xl font-bold text-[var(--color-text-main)]">Quản lý booking</h1>
       </div>
       <div className="grid md:grid-cols-4 gap-2 mb-4">
         <input placeholder="Booking ID" value={bookingId} onChange={e => setBookingId(e.target.value)} />
@@ -38,7 +38,7 @@ export default function AdminBookingsPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <select className="pl-9" value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">T?t c? tr?ng thái</option>
+            <option value="">Tất cả trạng thái</option>
             <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
             <option value="CONFIRMED">CONFIRMED</option>
             <option value="CANCELLED">CANCELLED</option>

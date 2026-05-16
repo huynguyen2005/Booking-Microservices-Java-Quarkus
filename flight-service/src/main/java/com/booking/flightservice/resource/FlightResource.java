@@ -371,6 +371,56 @@ public class FlightResource {
         return x;
     }
 
+    @PUT
+    @Path("/seats/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public Seat updateSeat(@PathParam("id") Long id, Seat input) {
+        Seat seat = Seat.findById(id);
+        if (seat == null) {
+            throw new NotFoundException("Seat not found");
+        }
+        String currentStatus = normalizeSeatStatus(seat.status);
+        if ("BOOKED".equals(currentStatus) || seat.booked) {
+            throw new BadRequestException("Booked seat cannot be updated");
+        }
+        Long oldFlightId = seat.flightId;
+        String oldSeatNumber = seat.seatNumber;
+
+        if (input.flightId != null) {
+            seat.flightId = input.flightId;
+        }
+        if (input.seatNumber != null && !input.seatNumber.isBlank()) {
+            seat.seatNumber = input.seatNumber.trim().toUpperCase(Locale.ROOT);
+        }
+        String normalized = normalizeSeatStatus(input.status);
+        seat.status = normalized;
+        seat.booked = "BOOKED".equals(normalized);
+
+        flightCacheService.invalidateSeatAvailability(oldFlightId, oldSeatNumber);
+        flightCacheService.invalidateSeatAvailability(seat.flightId, seat.seatNumber);
+        return seat;
+    }
+
+    @DELETE
+    @Path("/seats/{id}")
+    @RolesAllowed("ADMIN")
+    @Transactional
+    public void deleteSeat(@PathParam("id") Long id) {
+        Seat seat = Seat.findById(id);
+        if (seat == null) {
+            throw new NotFoundException("Seat not found");
+        }
+        String currentStatus = normalizeSeatStatus(seat.status);
+        if ("BOOKED".equals(currentStatus) || seat.booked) {
+            throw new BadRequestException("Booked seat cannot be deleted");
+        }
+        Long flightId = seat.flightId;
+        String seatNo = seat.seatNumber;
+        seat.delete();
+        flightCacheService.invalidateSeatAvailability(flightId, seatNo);
+    }
+
     @GET
     @Path("/seats/availability")
     @RolesAllowed({"USER", "ADMIN"})
@@ -385,20 +435,6 @@ public class FlightResource {
             }
             return "AVAILABLE".equalsIgnoreCase(s.status);
         });
-    }
-
-    @PUT
-    @Path("/seats/{id}/book")
-    @RolesAllowed("ADMIN")
-    @Transactional
-    public Seat book(@PathParam("id") Long id) {
-        Seat s = Seat.findById(id);
-        if (s != null) {
-            s.status = "BOOKED";
-            s.booked = true;
-            flightCacheService.invalidateSeatAvailability(s.flightId, s.seatNumber);
-        }
-        return s;
     }
 
     @PUT
