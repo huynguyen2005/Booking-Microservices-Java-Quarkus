@@ -1,0 +1,89 @@
+name: CD Manual Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker image tag to deploy (example: sha-abc1234 or latest)
+        required: true
+        default: latest
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "${{ secrets.KUBE_CONFIG }}" || (echo "Missing secret: KUBE_CONFIG" && exit 1)
+          test -n "${{ secrets.DOCKERHUB_USERNAME }}" || (echo "Missing secret: DOCKERHUB_USERNAME" && exit 1)
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+
+      - name: Configure kubeconfig
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.kube"
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/tmp/kubeconfig 2>/dev/null; then
+            cp /tmp/kubeconfig "$HOME/.kube/config"
+          else
+            echo "${{ secrets.KUBE_CONFIG }}" > "$HOME/.kube/config"
+          fi
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Apply namespace and infra
+        run: |
+          kubectl apply -f k8s/namespace.yml
+          kubectl apply -f k8s/postgres.yml
+          kubectl apply -f k8s/rabbitmq.yml
+          kubectl apply -f k8s/cloudinary-secret.yml
+
+      - name: Apply app manifests
+        run: |
+          kubectl apply -f k8s/api-gateway.yml
+          kubectl apply -f k8s/flight-service.yml
+          kubectl apply -f k8s/passenger-service.yml
+          kubectl apply -f k8s/booking-service.yml
+          kubectl apply -f k8s/payment-service.yml
+          kubectl apply -f k8s/ticket-service.yml
+          kubectl apply -f k8s/notification-service.yml
+          kubectl apply -f k8s/checkin-service.yml
+          kubectl apply -f k8s/user-service.yml
+          kubectl apply -f k8s/ingress.yml
+
+      - name: Set deployment images
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          REGISTRY_USER="${{ secrets.DOCKERHUB_USERNAME }}"
+          kubectl -n booking-system set image deployment/api-gateway api-gateway=${REGISTRY_USER}/booking-api-gateway:${TAG}
+          kubectl -n booking-system set image deployment/flight-service flight-service=${REGISTRY_USER}/booking-flight-service:${TAG}
+          kubectl -n booking-system set image deployment/passenger-service passenger-service=${REGISTRY_USER}/booking-passenger-service:${TAG}
+          kubectl -n booking-system set image deployment/booking-service booking-service=${REGISTRY_USER}/booking-booking-service:${TAG}
+          kubectl -n booking-system set image deployment/payment-service payment-service=${REGISTRY_USER}/booking-payment-service:${TAG}
+          kubectl -n booking-system set image deployment/ticket-service ticket-service=${REGISTRY_USER}/booking-ticket-service:${TAG}
+          kubectl -n booking-system set image deployment/notification-service notification-service=${REGISTRY_USER}/booking-notification-service:${TAG}
+          kubectl -n booking-system set image deployment/checkin-service checkin-service=${REGISTRY_USER}/booking-checkin-service:${TAG}
+          kubectl -n booking-system set image deployment/user-service user-service=${REGISTRY_USER}/booking-user-service:${TAG}
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n booking-system rollout status deployment/api-gateway --timeout=180s
+          kubectl -n booking-system rollout status deployment/flight-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/passenger-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/booking-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/payment-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/ticket-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/notification-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/checkin-service --timeout=180s
+          kubectl -n booking-system rollout status deployment/user-service --timeout=180s
