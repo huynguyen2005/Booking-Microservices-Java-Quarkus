@@ -1,6 +1,6 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { paymentApi, passengerApi, Payment, Passenger } from '../../api/endpoints';
+import { adminApi, bookingApi, flightApi, passengerApi, paymentApi, Booking, Flight, Passenger, Payment, User } from '../../api/endpoints';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { TableSkeleton } from '../../components/ui/LoadingSkeleton';
@@ -21,18 +21,42 @@ export default function AdminPaymentsPage() {
     queryKey: ['adminPassengersForPayments'],
     queryFn: passengerApi.getAllPassengers,
   });
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['adminUsersForPayments'],
+    queryFn: adminApi.getUsers,
+  });
+  const { data: bookings } = useQuery<Booking[]>({
+    queryKey: ['adminBookingsForPayments'],
+    queryFn: bookingApi.getAllBookings,
+  });
+  const { data: flights } = useQuery<Flight[]>({
+    queryKey: ['adminFlightsForPayments'],
+    queryFn: flightApi.getFlights,
+  });
 
   const passengerMap = useMemo(
     () => Object.fromEntries((passengers ?? []).map(p => [p.id, p])),
     [passengers]
   );
+  const userMap = useMemo(
+    () => Object.fromEntries((users ?? []).map(u => [u.id, u])),
+    [users]
+  );
+  const bookingMap = useMemo(
+    () => Object.fromEntries((bookings ?? []).map(b => [b.id, b])),
+    [bookings]
+  );
+  const flightMap = useMemo(
+    () => Object.fromEntries((flights ?? []).map(f => [f.id, f])),
+    [flights]
+  );
 
   const columns: Column<Payment>[] = useMemo(() => [
     { key: 'id', header: 'ID' },
-    { key: 'userId', header: 'User ID' },
-    { key: 'bookingId', header: 'Booking ID' },
-    { key: 'passengerId', header: 'Passenger ID' },
-    { key: 'flightId', header: 'Flight ID' },
+    { key: 'userId', header: 'Người dùng', render: p => userMap[p.userId]?.fullName || '—' },
+    { key: 'bookingId', header: 'Đặt chỗ', render: p => bookingMap[p.bookingId]?.bookingCode || `BK-${p.bookingId}` },
+    { key: 'passengerId', header: 'Hành khách', render: p => passengerMap[p.passengerId]?.fullName || '—' },
+    { key: 'flightId', header: 'Chuyến bay', render: p => flightMap[p.flightId]?.flightNumber || '—' },
     { key: 'status', header: 'Trạng thái', render: p => <StatusBadge status={p.status} /> },
     {
       key: '_actions',
@@ -53,26 +77,25 @@ export default function AdminPaymentsPage() {
         </div>
       ),
     },
-  ], []);
+  ], [bookingMap, flightMap, passengerMap, userMap]);
 
   const payments = useMemo(() => {
-    const keyword = searchTerm.trim();
+    const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return rawPayments ?? [];
-    const normalizedKeyword = keyword.toLowerCase();
+    const keywordAsNumber = Number(keyword);
+    const hasNumericKeyword = keyword !== '' && !Number.isNaN(keywordAsNumber);
     return (rawPayments ?? []).filter(p =>
-      String(p.id ?? '').includes(keyword) ||
-      String(p.bookingId ?? '').includes(keyword) ||
-      String(p.userId ?? '').includes(keyword) ||
-      String(p.passengerId ?? '').includes(keyword) ||
-      (passengerMap[p.passengerId]?.fullName ?? '').toLowerCase().includes(normalizedKeyword)
+      (hasNumericKeyword && (p.id === keywordAsNumber || p.bookingId === keywordAsNumber)) ||
+      (userMap[p.userId]?.fullName ?? '').toLowerCase().includes(keyword) ||
+      (passengerMap[p.passengerId]?.fullName ?? '').toLowerCase().includes(keyword)
     );
-  }, [rawPayments, searchTerm, passengerMap]);
+  }, [rawPayments, searchTerm, userMap, passengerMap]);
 
   return (
     <div className="animate-fade-in">
       <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">Quản lý thanh toán</h1>
       <div className="grid md:grid-cols-2 gap-2 mb-4">
-        <input placeholder="Tìm Payment/Booking/User/Passenger ID hoặc tên hành khách" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        <input placeholder="Tìm theo Payment ID / Booking ID / tên người dùng / tên hành khách" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         <select value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           <option value="PENDING">PENDING</option>

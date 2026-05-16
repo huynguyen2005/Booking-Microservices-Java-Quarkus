@@ -62,6 +62,13 @@ public class CheckinResource {
         String authorization = headers.getHeaderString("Authorization");
         TicketView ticket = ticketClient.byCode(c.ticketCode, authorization);
         assertOwnership(ticket);
+        String ticketStatus = ticket.status() == null ? "" : ticket.status().trim().toUpperCase();
+        if ("CANCELLED".equals(ticketStatus) || "VOID".equals(ticketStatus)) {
+            throw new WebApplicationException("Ticket has been cancelled", 409);
+        }
+        if ("CHECKED_IN".equals(ticketStatus)) {
+            throw new WebApplicationException("Ticket already checked in", 409);
+        }
         c.userId = ticket.userId();
         c.bookingId = ticket.bookingId();
         c.passengerId = ticket.passengerId();

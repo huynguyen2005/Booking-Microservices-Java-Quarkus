@@ -593,7 +593,7 @@
               "raw": "{\n  \"flightId\": {{flightId}},\n  \"seatNumber\": \"A2\",\n  \"status\": \"BOOKED\"\n}"
             },
             "url": "{{baseUrl}}/api/seats/{{seatId}}",
-            "description": "Update seat by seatId. D�ng status=BOOKED d? d�nh d?u d� d?t."
+            "description": "Update seat by seatId. Dùng status=BOOKED để đánh dấu đã đặt."
           }
         }
       ]
@@ -813,7 +813,7 @@
             }
           },
           {
-            "name": "Admin Cancel Booking (PENDING_PAYMENT only)",
+            "name": "Admin Cancel Booking (PENDING_PAYMENT or CONFIRMED)",
             "request": {
               "method": "PUT",
               "header": [
@@ -838,7 +838,7 @@
                 }
               },
               "url": "{{baseUrl}}/api/bookings/{{bookingId}}/admin-cancel",
-              "description": "Admin cancel booking in PENDING_PAYMENT status. Requires cancelReason (min 5 chars)."
+              "description": "Admin cancel booking in PENDING_PAYMENT or CONFIRMED status. Blocked when ticket already CHECKED_IN. Requires cancelReason (min 5 chars)."
             }
           }
         ]
@@ -1328,3 +1328,4 @@
   },
   "event": []
 }
+

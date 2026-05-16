@@ -17,8 +17,7 @@ export default function MyTicketsPage() {
   const { data: airports = [] } = useQuery<Airport[]>({ queryKey: ['airportsForTickets'], queryFn: flightApi.getAirports });
   const { data: airplanes = [] } = useQuery<Airplane[]>({ queryKey: ['airplanesForTickets'], queryFn: flightApi.getAirplanes });
   const [searchCode, setSearchCode] = useState('');
-
-  if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" /></div>;
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ISSUED' | 'CHECKED_IN' | 'CANCELLED'>('ALL');
 
   const airportMap = useMemo(
     () => Object.fromEntries(airports.map(a => [a.id, a])),
@@ -31,11 +30,16 @@ export default function MyTicketsPage() {
 
   const filteredTickets = useMemo(() => {
     const keyword = searchCode.trim().toLowerCase();
-    if (!keyword) return tickets ?? [];
-    return (tickets ?? []).filter(t =>
-      (t.ticketCode ?? '').toLowerCase().includes(keyword)
-    );
-  }, [tickets, searchCode]);
+    return (tickets ?? []).filter(t => {
+      const status = (t.status ?? '').toUpperCase();
+      const statusMatched = statusFilter === 'ALL' || status === statusFilter;
+      if (!statusMatched) return false;
+      if (!keyword) return true;
+      return (t.ticketCode ?? '').toLowerCase().includes(keyword);
+    });
+  }, [tickets, searchCode, statusFilter]);
+
+  if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" /></div>;
 
   const renderTicketCard = (t: Ticket) => {
     const flight = flights.find(f => f.id === t.flightId);
@@ -81,7 +85,7 @@ export default function MyTicketsPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">Vé của tôi</h1>
 
-      <div className="mb-8">
+      <div className="grid md:grid-cols-2 gap-2 mb-8">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <input
@@ -91,6 +95,12 @@ export default function MyTicketsPage() {
             onChange={e => setSearchCode(e.target.value)}
           />
         </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'ALL' | 'ISSUED' | 'CHECKED_IN' | 'CANCELLED')}>
+          <option value="ALL">Tất cả trạng thái</option>
+          <option value="ISSUED">Đã phát hành</option>
+          <option value="CHECKED_IN">Đã check-in</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
       </div>
 
       {!tickets || tickets.length === 0 ? (
@@ -101,7 +111,7 @@ export default function MyTicketsPage() {
         </div>
       ) : filteredTickets.length === 0 ? (
         <div className="text-center py-16 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] text-[var(--color-text-muted)]">
-          Không tìm thấy vé với mã này.
+          Không tìm thấy vé phù hợp bộ lọc.
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">

@@ -25,6 +25,14 @@ export default function AdminBookingsPage() {
     queryKey: ['adminPassengersForBookingSearch'],
     queryFn: passengerApi.getAllPassengers,
   });
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['adminUsersForBookingList'],
+    queryFn: adminApi.getUsers,
+  });
+  const { data: flights } = useQuery<Flight[]>({
+    queryKey: ['adminFlightsForBookingList'],
+    queryFn: flightApi.getFlights,
+  });
   const { data: bookingDetail, isLoading: isDetailLoading } = useQuery<Booking>({
     queryKey: ['adminBookingDetail', selectedBookingId],
     queryFn: () => bookingApi.getById(selectedBookingId as number),
@@ -66,11 +74,35 @@ export default function AdminBookingsPage() {
     },
   });
 
+  const airportMap = useMemo(
+    () => Object.fromEntries((airports ?? []).map(a => [a.id, a])),
+    [airports]
+  );
+  const passengerMap = useMemo(
+    () => Object.fromEntries((passengers ?? []).map(p => [p.id, p])),
+    [passengers]
+  );
+  const userMap = useMemo(
+    () => Object.fromEntries((users ?? []).map(u => [u.id, u])),
+    [users]
+  );
+  const flightMap = useMemo(
+    () => Object.fromEntries((flights ?? []).map(f => [f.id, f])),
+    [flights]
+  );
   const columns: Column<Booking>[] = useMemo(() => [
     { key: 'id', header: 'ID' },
-    { key: 'userId', header: 'User ID' },
-    { key: 'passengerId', header: 'Passenger ID' },
-    { key: 'flightId', header: 'Flight ID' },
+    { key: 'userId', header: 'Người dùng', render: b => userMap[b.userId]?.fullName || `#${b.userId}` },
+    { key: 'passengerId', header: 'Hành khách', render: b => passengerMap[b.passengerId]?.fullName || `#${b.passengerId}` },
+    {
+      key: 'flightId',
+      header: 'Chuyến bay',
+      render: b => {
+        const flight = flightMap[b.flightId];
+        if (!flight) return '—';
+        return flight.flightNumber || '—';
+      },
+    },
     { key: 'seatNumber', header: 'Ghế', render: b => <span className="font-mono font-bold">{b.seatNumber}</span> },
     { key: 'status', header: 'Trạng thái', render: b => <StatusBadge status={b.status} /> },
     {
@@ -105,15 +137,7 @@ export default function AdminBookingsPage() {
         </div>
       ),
     },
-  ], []);
-  const airportMap = useMemo(
-    () => Object.fromEntries((airports ?? []).map(a => [a.id, a])),
-    [airports]
-  );
-  const passengerMap = useMemo(
-    () => Object.fromEntries((passengers ?? []).map(p => [p.id, p])),
-    [passengers]
-  );
+  ], [airportMap, flightMap, passengerMap, userMap]);
   const filteredBookings = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
     const keywordAsNumber = Number(normalizedKeyword);
@@ -125,24 +149,18 @@ export default function AdminBookingsPage() {
       if (!normalizedKeyword) return true;
 
       const passengerName = (passengerMap[b.passengerId]?.fullName ?? '').toLowerCase();
-      const passengerEmail = (passengerMap[b.passengerId]?.email ?? '').toLowerCase();
+      const flightNumber = (flightMap[b.flightId]?.flightNumber ?? '').toLowerCase();
 
       const textMatch =
         passengerName.includes(normalizedKeyword) ||
-        passengerEmail.includes(normalizedKeyword) ||
-        (b.seatNumber ?? '').toLowerCase().includes(normalizedKeyword);
+        flightNumber.includes(normalizedKeyword);
 
       if (textMatch) return true;
       if (!hasNumericKeyword) return false;
 
-      return (
-        b.id === keywordAsNumber ||
-        b.passengerId === keywordAsNumber ||
-        b.flightId === keywordAsNumber ||
-        b.userId === keywordAsNumber
-      );
+      return b.id === keywordAsNumber;
     });
-  }, [bookings, keyword, status, passengerMap]);
+  }, [bookings, keyword, status, passengerMap, flightMap]);
 
   return (
     <div className="animate-fade-in">
@@ -154,7 +172,7 @@ export default function AdminBookingsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
           <input
             className="pl-9"
-            placeholder="Tìm theo Booking ID / Passenger ID / Flight ID / tên hành khách"
+            placeholder="Tìm theo Booking ID / tên hành khách / mã chuyến bay (VD: VJ999)"
             value={keyword}
             onChange={e => setKeyword(e.target.value)}
           />

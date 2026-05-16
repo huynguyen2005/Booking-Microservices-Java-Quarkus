@@ -99,9 +99,10 @@ Hệ thống kiểm tra `userId` trong JWT so với `userId` trong dữ liệu d
 5. `ticket-service` consume `PaymentCompletedEvent`, tạo ticket với `seatNumber` thật, publish `TicketIssuedEvent`
 6. Khi thanh toán thất bại: `payment-service` publish `PaymentFailedEvent`
 7. `booking-service` consume `PaymentFailedEvent`, chuyển booking `CANCELLED`, release seat về `AVAILABLE`
-8. `checkin-service` publish `CheckinCompletedEvent`
+8. `checkin-service` publish `CheckinCompletedEvent`, `ticket-service` consume và cập nhật ticket `CHECKED_IN`
 9. `notification-service` consume và log event
-10. Admin có thể hủy booking `PENDING_PAYMENT` qua endpoint riêng, booking-service publish `booking.cancelled`
+10. Admin có thể hủy booking `PENDING_PAYMENT` hoặc `CONFIRMED` (chỉ khi chưa check-in), booking-service publish `booking.cancelled`
+11. `ticket-service` consume `booking.cancelled` và cập nhật ticket `CANCELLED` (trừ ticket đã `CHECKED_IN`)
 
 Timeout flow:
 - `booking-service` có scheduler chạy mỗi `1m`.
@@ -262,7 +263,7 @@ Flight payload fields mới:
 - `GET /api/bookings/search?bookingId=&passengerId=&flightId=&status=`
 - `POST /api/bookings`
 - `PUT /api/bookings/{id}/cancel`
-- `PUT /api/bookings/{id}/admin-cancel` (ADMIN, yêu cầu body `cancelReason`, chỉ cho phép khi booking đang `PENDING_PAYMENT`)
+- `PUT /api/bookings/{id}/admin-cancel` (ADMIN, yêu cầu body `cancelReason`, cho phép khi booking đang `PENDING_PAYMENT` hoặc `CONFIRMED`, chặn khi ticket đã check-in)
 - `GET /api/payments`
 - `GET /api/payments/me`
 - `GET /api/payments/booking/{bookingId}`
@@ -291,7 +292,8 @@ Booking status:
 - `EXPIRED`
 
 Admin cancel policy:
-- Chỉ hủy được khi booking đang `PENDING_PAYMENT`
+- Chỉ hủy được khi booking đang `PENDING_PAYMENT` hoặc `CONFIRMED`
+- Nếu ticket đã `CHECKED_IN` thì không thể hủy
 - Bắt buộc `cancelReason` tối thiểu 5 ký tự
 - Hủy sẽ release seat + expire payment pending + ghi audit log (`BookingCancelAudit`)
 

@@ -5,6 +5,10 @@ import com.booking.bookingservice.client.FlightView;
 import com.booking.bookingservice.client.PassengerClient;
 import com.booking.bookingservice.client.PassengerView;
 import com.booking.bookingservice.client.PaymentClient;
+import com.booking.bookingservice.client.TicketClient;
+import com.booking.bookingservice.client.TicketView;
+import com.booking.bookingservice.client.CheckinClient;
+import com.booking.bookingservice.client.CheckinView;
 import com.booking.bookingservice.entity.Booking;
 import com.booking.bookingservice.entity.BookingCancelAudit;
 import com.booking.bookingservice.event.BookingCancelledEvent;
@@ -32,6 +36,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -56,8 +61,10 @@ public class BookingResource {
     @Inject @RestClient FlightClient flightClient;
     @Inject @RestClient PassengerClient passengerClient;
     @Inject @RestClient PaymentClient paymentClient;
+    @Inject @RestClient TicketClient ticketClient;
+    @Inject @RestClient CheckinClient checkinClient;
     @Inject @Channel("booking-created-out") Emitter<BookingCreatedEvent> emitter;
-    @Inject @Channel("booking-cancelled-out") Emitter<BookingCancelledEvent> cancelEmitter;
+    @Inject @Channel("booking-cancelled-out") MutinyEmitter<BookingCancelledEvent> cancelEmitter;
     @Inject SeatLockService seatLockService;
     @Inject JsonWebToken jwt;
 
@@ -261,8 +268,8 @@ public class BookingResource {
         if (STATUS_EXPIRED.equalsIgnoreCase(booking.status)) {
             return booking;
         }
-        if (!STATUS_PENDING_PAYMENT.equalsIgnoreCase(booking.status)) {
-            throw new WebApplicationException("Only PENDING_PAYMENT booking can be cancelled by admin", 409);
+        if (!STATUS_PENDING_PAYMENT.equalsIgnoreCase(booking.status) && !STATUS_CONFIRMED.equalsIgnoreCase(booking.status)) {
+            throw new WebApplicationException("Only PENDING_PAYMENT or CONFIRMED booking can be cancelled by admin", 409);
         }
         String reason = req == null || req.cancelReason == null ? "" : req.cancelReason.trim();
         if (reason.length() < 5) {
@@ -270,11 +277,16 @@ public class BookingResource {
         }
         String oldStatus = booking.status;
         String authorization = headers.getHeaderString("Authorization");
+        if (hasCheckedInTicket(booking.id, authorization)) {
+            throw new WebApplicationException("Ticket already checked in. Admin cannot cancel this booking", 409);
+        }
         try {
             flightClient.releaseSeat(booking.flightId, booking.seatNumber, authorization);
         } catch (Exception ignored) {
         }
-        expirePendingPayment(booking.id);
+        if (STATUS_PENDING_PAYMENT.equalsIgnoreCase(oldStatus)) {
+            expirePendingPayment(booking.id);
+        }
         booking.status = STATUS_CANCELLED;
         BookingCancelAudit audit = new BookingCancelAudit();
         audit.bookingId = booking.id;
@@ -305,7 +317,36 @@ public class BookingResource {
         event.status = booking.status;
         event.reason = reason;
         event.cancelledByAdminId = adminId;
-        cancelEmitter.send(event);
+        cancelEmitter.sendAndAwait(event);
+    }
+
+    private boolean hasCheckedInTicket(Long bookingId, String authorization) {
+        List<TicketView> tickets = ticketClient.byBooking(bookingId, authorization);
+        if (tickets == null || tickets.isEmpty()) {
+            return false;
+        }
+        for (TicketView ticket : tickets) {
+            String ticketStatus = ticket.status() == null ? "" : ticket.status().trim().toUpperCase(Locale.ROOT);
+            if ("CHECKED_IN".equals(ticketStatus)) {
+                return true;
+            }
+            if (ticket.ticketCode() == null || ticket.ticketCode().isBlank()) {
+                continue;
+            }
+            try {
+                CheckinView checkin = checkinClient.byTicket(ticket.ticketCode(), authorization);
+                String checkinStatus = checkin == null || checkin.status() == null ? "" : checkin.status().trim().toUpperCase(Locale.ROOT);
+                if ("CHECKED_IN".equals(checkinStatus)) {
+                    return true;
+                }
+            } catch (WebApplicationException e) {
+                int code = e.getResponse() != null ? e.getResponse().getStatus() : 500;
+                if (code != 404) {
+                    throw e;
+                }
+            }
+        }
+        return false;
     }
 
     private long currentUserId() {

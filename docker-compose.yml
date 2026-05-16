@@ -204,6 +204,8 @@ services:
       FLIGHT_SERVICE_URL: http://flight-service:8081
       PASSENGER_SERVICE_URL: http://passenger-service:8082
       PAYMENT_SERVICE_URL: http://payment-service:8084
+      TICKET_SERVICE_URL: http://ticket-service:8085
+      CHECKIN_SERVICE_URL: http://checkin-service:8087
       REDIS_URL: redis://redis:6379
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8083/q/swagger-ui/ > /dev/null"]

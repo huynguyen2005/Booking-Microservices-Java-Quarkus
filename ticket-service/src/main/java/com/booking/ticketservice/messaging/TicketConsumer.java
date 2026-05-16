@@ -11,6 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 @ApplicationScoped
 public class TicketConsumer {
     @Inject @Channel("ticket-issued-out") Emitter<TicketIssuedEvent> issued;
+
     @Incoming("payment-completed-in")
     @Transactional
     public void consume(JsonObject event){
@@ -33,5 +34,29 @@ public class TicketConsumer {
         t.persist();
         TicketIssuedEvent out=new TicketIssuedEvent(); out.ticketId=t.id; out.userId=t.userId; out.ticketCode=t.ticketCode; out.bookingId=t.bookingId; out.passengerId=t.passengerId; out.flightId=t.flightId; out.status=t.status;
         issued.send(out);
+    }
+
+    @Incoming("checkin-completed-in")
+    @Transactional
+    public void onCheckinCompleted(JsonObject event) {
+        String ticketCode = event.getString("ticketCode");
+        if (ticketCode == null || ticketCode.isBlank()) {
+            return;
+        }
+        Ticket ticket = Ticket.find("ticketCode", ticketCode).firstResult();
+        if (ticket == null) {
+            return;
+        }
+        ticket.status = "CHECKED_IN";
+    }
+
+    @Incoming("booking-cancelled-in")
+    @Transactional
+    public void onBookingCancelled(JsonObject event) {
+        Long bookingId = event.getLong("bookingId");
+        if (bookingId == null) {
+            return;
+        }
+        Ticket.update("status = ?1 where bookingId = ?2 and upper(status) <> 'CHECKED_IN'", "CANCELLED", bookingId);
     }
 }

@@ -176,7 +176,7 @@ Payload khuyến nghị khi tạo/cập nhật Flight:
 
 - Booking: `PENDING_PAYMENT`, `CONFIRMED`, `CANCELLED`, `EXPIRED`
 - Payment: `PENDING`, `PAID`, `FAILED`
-- Ticket: `ISSUED`
+- Ticket: `ISSUED`, `CHECKED_IN`, `CANCELLED`
 - Checkin: `CHECKED_IN`
 - Seat: `AVAILABLE`, `HELD`, `BOOKED`
 
@@ -184,6 +184,7 @@ Payload khuyến nghị khi tạo/cập nhật Flight:
 
 - Tách layout theo role `USER`/`ADMIN`.
 - Khi payment success/fail, nên refresh/poll booking + ticket vài giây do flow async qua RabbitMQ.
+- Admin cancel booking chỉ hợp lệ khi booking là `PENDING_PAYMENT` hoặc `CONFIRMED` và ticket chưa `CHECKED_IN`.
 - Với lỗi backend, ưu tiên hiển thị message trả về (plain text hoặc JSON message).
 - Upload ảnh dùng multipart/form-data, giới hạn file ảnh hợp lệ (`jpeg/png/webp`, <= 5MB).
 
