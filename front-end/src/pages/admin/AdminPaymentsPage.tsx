@@ -1,29 +1,31 @@
 ﻿import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { paymentApi, Payment } from '../../api/endpoints';
+import { useQuery } from '@tanstack/react-query';
+import { paymentApi, passengerApi, Payment, Passenger } from '../../api/endpoints';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { TableSkeleton } from '../../components/ui/LoadingSkeleton';
 import { Button } from '../../components/ui/Button';
-import { toast } from '../../components/ui/Toast';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
+import { Eye } from 'lucide-react';
 
 export default function AdminPaymentsPage() {
-  const qc = useQueryClient();
-  const [paymentId, setPaymentId] = useState('');
-  const [bookingId, setBookingId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState('');
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
-  const { data: payments, isLoading } = useQuery<Payment[]>({
-    queryKey: ['adminPayments', paymentId, bookingId, status],
-    queryFn: () => paymentApi.search({ paymentId: paymentId ? Number(paymentId) : undefined, bookingId: bookingId ? Number(bookingId) : undefined, status: status || undefined }),
+  const { data: rawPayments, isLoading } = useQuery<Payment[]>({
+    queryKey: ['adminPayments', status],
+    queryFn: () => paymentApi.search({ status: status || undefined }),
+  });
+  const { data: passengers } = useQuery<Passenger[]>({
+    queryKey: ['adminPassengersForPayments'],
+    queryFn: passengerApi.getAllPassengers,
   });
 
-  const [action, setAction] = useState<{ id: number; type: 'pay' | 'fail' } | null>(null);
-
-  const payMut = useMutation({ mutationFn: paymentApi.pay, onSuccess: () => { toast.success('Đã đánh dấu PAID'); setAction(null); qc.invalidateQueries({ queryKey: ['adminPayments'] }); }, onError: (e: any) => { toast.error(e.response?.data?.message || e.response?.data || 'Có lỗi xảy ra'); setAction(null); } });
-  const failMut = useMutation({ mutationFn: paymentApi.fail, onSuccess: () => { toast.success('Đã đánh dấu FAILED'); setAction(null); qc.invalidateQueries({ queryKey: ['adminPayments'] }); }, onError: (e: any) => { toast.error(e.response?.data?.message || e.response?.data || 'Có lỗi xảy ra'); setAction(null); } });
+  const passengerMap = useMemo(
+    () => Object.fromEntries((passengers ?? []).map(p => [p.id, p])),
+    [passengers]
+  );
 
   const columns: Column<Payment>[] = useMemo(() => [
     { key: 'id', header: 'ID' },
@@ -32,20 +34,45 @@ export default function AdminPaymentsPage() {
     { key: 'passengerId', header: 'Passenger ID' },
     { key: 'flightId', header: 'Flight ID' },
     { key: 'status', header: 'Trạng thái', render: p => <StatusBadge status={p.status} /> },
-    { key: '_actions', header: '', sortable: false, render: p => (p.status ?? '').toUpperCase() === 'PENDING' ? (
-      <div className="flex gap-1 justify-end">
-        <Button size="sm" variant="ghost" onClick={() => setAction({ id: p.id, type: 'pay' })} className="text-[var(--color-success)]"><CheckCircle className="w-3.5 h-3.5 mr-1" /> Pay</Button>
-        <Button size="sm" variant="ghost" onClick={() => setAction({ id: p.id, type: 'fail' })} className="text-[var(--color-danger)]"><XCircle className="w-3.5 h-3.5 mr-1" /> Fail</Button>
-      </div>
-    ) : null },
+    {
+      key: '_actions',
+      header: '',
+      sortable: false,
+      render: p => (
+        <div className="flex gap-1 justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedPayment(p)}
+            title="Xem chi tiết"
+            aria-label="Xem chi tiết thanh toán"
+            className="hover:text-[var(--color-primary)] hover:bg-transparent focus:bg-transparent active:bg-transparent"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
   ], []);
+
+  const payments = useMemo(() => {
+    const keyword = searchTerm.trim();
+    if (!keyword) return rawPayments ?? [];
+    const normalizedKeyword = keyword.toLowerCase();
+    return (rawPayments ?? []).filter(p =>
+      String(p.id ?? '').includes(keyword) ||
+      String(p.bookingId ?? '').includes(keyword) ||
+      String(p.userId ?? '').includes(keyword) ||
+      String(p.passengerId ?? '').includes(keyword) ||
+      (passengerMap[p.passengerId]?.fullName ?? '').toLowerCase().includes(normalizedKeyword)
+    );
+  }, [rawPayments, searchTerm, passengerMap]);
 
   return (
     <div className="animate-fade-in">
       <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">Quản lý thanh toán</h1>
-      <div className="grid md:grid-cols-3 gap-2 mb-4">
-        <input placeholder="Payment ID" value={paymentId} onChange={e => setPaymentId(e.target.value)} />
-        <input placeholder="Booking ID" value={bookingId} onChange={e => setBookingId(e.target.value)} />
+      <div className="grid md:grid-cols-2 gap-2 mb-4">
+        <input placeholder="Tìm Payment/Booking/User/Passenger ID hoặc tên hành khách" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         <select value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           <option value="PENDING">PENDING</option>
@@ -54,10 +81,59 @@ export default function AdminPaymentsPage() {
         </select>
       </div>
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] shadow-sm overflow-hidden">
-        {isLoading ? <div className="p-6"><TableSkeleton rows={5} cols={7} /></div> : <DataTable columns={columns} data={payments ?? []} pageSize={10} />}
+        {isLoading ? <div className="p-6"><TableSkeleton rows={5} cols={7} /></div> : <DataTable columns={columns} data={payments} pageSize={10} />}
       </div>
-      <ConfirmDialog open={action !== null} onClose={() => setAction(null)} onConfirm={() => { if (action?.type === 'pay') payMut.mutate(action.id); else if (action?.type === 'fail') failMut.mutate(action.id); }} title={action?.type === 'pay' ? 'Xác nhận thanh toán' : 'Đánh dấu thất bại'} message={action?.type === 'pay' ? 'Đánh dấu payment là PAID?' : 'Đánh dấu payment là FAILED?'} confirmText={action?.type === 'pay' ? 'Pay' : 'Fail'} variant={action?.type === 'fail' ? 'danger' : undefined} loading={payMut.isPending || failMut.isPending} />
+
+      <Modal open={selectedPayment !== null} onClose={() => setSelectedPayment(null)} title="Chi tiết thanh toán" maxWidth="max-w-2xl">
+        {selectedPayment && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-[var(--color-text-muted)]">Payment ID</p>
+              <p className="font-semibold">{selectedPayment.id}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Trạng thái</p>
+              <div className="pt-1"><StatusBadge status={selectedPayment.status} /></div>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">User ID</p>
+              <p className="font-semibold">{selectedPayment.userId}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Booking ID</p>
+              <p className="font-semibold">{selectedPayment.bookingId}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Passenger ID</p>
+              <p className="font-semibold">{selectedPayment.passengerId}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Tên hành khách</p>
+              <p className="font-semibold">{passengerMap[selectedPayment.passengerId]?.fullName || '-'}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Flight ID</p>
+              <p className="font-semibold">{selectedPayment.flightId}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Ghế</p>
+              <p className="font-semibold">{selectedPayment.seatNumber || '-'}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Số tiền</p>
+              <p className="font-semibold">{selectedPayment.amount != null ? selectedPayment.amount : '-'}</p>
+            </div>
+            <div>
+              <p className="text-[var(--color-text-muted)]">Tiền tệ</p>
+              <p className="font-semibold">{selectedPayment.currency || '-'}</p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-[var(--color-text-muted)]">Thời gian thanh toán</p>
+              <p className="font-semibold">{selectedPayment.paidAt ? new Date(selectedPayment.paidAt).toLocaleString('vi-VN') : '-'}</p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
-

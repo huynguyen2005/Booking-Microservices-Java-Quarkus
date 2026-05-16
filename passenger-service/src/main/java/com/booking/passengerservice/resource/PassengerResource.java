@@ -100,11 +100,13 @@ public class PassengerResource {
     @RolesAllowed({"USER", "ADMIN"})
     @Transactional
     public Passenger update(@PathParam("id") Long id, Passenger input) {
-        if (isAdmin()) {
-            throw new ForbiddenException("Admin không được sửa thông tin passenger");
-        }
         Passenger passenger = findByIdOrThrow(id);
-        assertOwnership(passenger);
+        if (passenger.userId == null || passenger.userId.longValue() != currentUserId()) {
+            throw new ForbiddenException("Only the owner can update this passenger");
+        }
+        if (input.userId != null && !input.userId.equals(passenger.userId)) {
+            throw new ForbiddenException("Cannot change passenger owner");
+        }
         passenger.fullName = input.fullName;
         passenger.email = input.email;
         passenger.phone = input.phone;

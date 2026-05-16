@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { bookingApi, Booking, flightApi, passengerApi, paymentApi } from '../api/endpoints';
@@ -18,6 +18,8 @@ const formatServerDateTime = (value?: string | null) => {
 export default function MyBookingsPage() {
   const qc = useQueryClient();
   const [cancelId, setCancelId] = useState<number | null>(null);
+  const [bookingKeyword, setBookingKeyword] = useState('');
+  const [bookingFilterStatus, setBookingFilterStatus] = useState<'ALL' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'>('ALL');
 
   const { data: bookings, isLoading } = useQuery<Booking[]>({ queryKey: ['myBookings'], queryFn: bookingApi.getMyBookings });
   const { data: flights = [] } = useQuery({ queryKey: ['flights'], queryFn: flightApi.getFlights });
@@ -51,6 +53,20 @@ export default function MyBookingsPage() {
     return 'Chưa có payment';
   };
 
+  const filteredBookings = useMemo(() => {
+    const list = bookings ?? [];
+    const keyword = bookingKeyword.trim().toLowerCase();
+    return list.filter((b) => {
+      const normalizedStatus = (b.status ?? '').toUpperCase();
+      const matchStatus = bookingFilterStatus === 'ALL' || normalizedStatus === bookingFilterStatus;
+      const matchKeyword =
+        keyword.length === 0 ||
+        String(b.id).includes(keyword) ||
+        (b.bookingCode ?? '').toLowerCase().includes(keyword);
+      return matchStatus && matchKeyword;
+    });
+  }, [bookings, bookingKeyword, bookingFilterStatus]);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-[var(--color-text-main)] mb-2">Đặt chỗ của tôi</h1>
@@ -66,48 +82,74 @@ export default function MyBookingsPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {bookings.map(b => {
-            const isPendingPayment = (b.status ?? '').toUpperCase() === 'PENDING_PAYMENT';
-            const flight = flights.find(f => f.id === b.flightId);
-            const passenger = passengers.find(p => p.id === b.passengerId);
-            const payment = payments.find(p => p.bookingId === b.id);
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+            <input
+              placeholder="Tìm theo mã booking"
+              value={bookingKeyword}
+              onChange={(e) => setBookingKeyword(e.target.value)}
+            />
+            <select
+              value={bookingFilterStatus}
+              onChange={(e) => setBookingFilterStatus(e.target.value as 'ALL' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED')}
+            >
+              <option value="ALL">Tất cả</option>
+              <option value="PENDING_PAYMENT">Chờ thanh toán</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="CANCELLED">Đã hủy</option>
+              <option value="EXPIRED">Quá hạn</option>
+            </select>
+          </div>
 
-            return (
-              <div key={b.id} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] p-5 hover:shadow-sm transition-all">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-[var(--color-text-main)]">Booking #{b.id}</span>
-                    <StatusBadge status={b.status} />
-                  </div>
-                  {isPendingPayment && (
-                    <div className="flex items-center gap-2">
-                      <Link to={`/my-payments?bookingId=${b.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:underline">
-                        <CreditCard className="w-4 h-4" /> Thanh toán
-                      </Link>
-                      <Button variant="ghost" size="sm" className="text-[var(--color-danger)]" onClick={() => setCancelId(b.id)}>
-                        <XCircle className="w-4 h-4 mr-1" /> Hủy
-                      </Button>
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] text-[var(--color-text-muted)]">
+              Không có booking phù hợp bộ lọc.
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filteredBookings.map(b => {
+                const isPendingPayment = (b.status ?? '').toUpperCase() === 'PENDING_PAYMENT';
+                const flight = flights.find(f => f.id === b.flightId);
+                const passenger = passengers.find(p => p.id === b.passengerId);
+                const payment = payments.find(p => p.bookingId === b.id);
+
+                return (
+                  <div key={b.id} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] p-5 hover:shadow-sm transition-all">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-[var(--color-text-main)]">Booking #{b.id}</span>
+                        <StatusBadge status={b.status} />
+                      </div>
+                      {isPendingPayment && (
+                        <div className="flex items-center gap-2">
+                          <Link to={`/my-payments?bookingId=${b.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:underline">
+                            <CreditCard className="w-4 h-4" /> Thanh toán
+                          </Link>
+                          <Button variant="ghost" size="sm" className="text-[var(--color-danger)]" onClick={() => setCancelId(b.id)}>
+                            <XCircle className="w-4 h-4 mr-1" /> Hủy
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm text-[var(--color-text-muted)]">
-                  <span>Mã booking: <span className="font-medium text-[var(--color-text-main)]">{b.bookingCode || `#${b.id}`}</span></span>
-                  <span>Chuyến bay: <span className="font-medium text-[var(--color-text-main)]">{flight?.flightNumber || `#${b.flightId}`}</span></span>
-                  <span>Ghế: <span className="font-mono font-bold text-[var(--color-text-main)]">{b.seatNumber}</span></span>
-                  <span>Hành khách: <span className="font-medium text-[var(--color-text-main)]">{passenger?.fullName || `#${b.passengerId}`}</span></span>
-                  <span>Email hành khách: <span className="font-medium text-[var(--color-text-main)]">{passenger?.email || 'Chưa cập nhật'}</span></span>
-                  <span>Số hộ chiếu: <span className="font-medium text-[var(--color-text-main)]">{passenger?.passportNumber || 'Chưa cập nhật'}</span></span>
-                  <span>Trạng thái thanh toán: <span className="font-medium text-[var(--color-text-main)]">{paymentStatusText(payment?.status)}</span></span>
-                  <span>Số tiền: <span className="font-medium text-[var(--color-text-main)]">{formatMoney(payment?.amount, payment?.currency)}</span></span>
-                  <span>Tạo lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.createdAt)}</span></span>
-                  <span>Cập nhật lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.updatedAt)}</span></span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm text-[var(--color-text-muted)]">
+                      <span>Mã booking: <span className="font-medium text-[var(--color-text-main)]">{b.bookingCode || `#${b.id}`}</span></span>
+                      <span>Chuyến bay: <span className="font-medium text-[var(--color-text-main)]">{flight?.flightNumber || `#${b.flightId}`}</span></span>
+                      <span>Ghế: <span className="font-mono font-bold text-[var(--color-text-main)]">{b.seatNumber}</span></span>
+                      <span>Hành khách: <span className="font-medium text-[var(--color-text-main)]">{passenger?.fullName || `#${b.passengerId}`}</span></span>
+                      <span>Email hành khách: <span className="font-medium text-[var(--color-text-main)]">{passenger?.email || 'Chưa cập nhật'}</span></span>
+                      <span>Số hộ chiếu: <span className="font-medium text-[var(--color-text-main)]">{passenger?.passportNumber || 'Chưa cập nhật'}</span></span>
+                      <span>Trạng thái thanh toán: <span className="font-medium text-[var(--color-text-main)]">{paymentStatusText(payment?.status)}</span></span>
+                      <span>Số tiền: <span className="font-medium text-[var(--color-text-main)]">{formatMoney(payment?.amount, payment?.currency)}</span></span>
+                      <span>Tạo lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.createdAt)}</span></span>
+                      <span>Cập nhật lúc: <span className="font-medium text-[var(--color-text-main)]">{formatServerDateTime(b.updatedAt)}</span></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       <ConfirmDialog

@@ -4,7 +4,10 @@ import com.booking.bookingservice.client.FlightClient;
 import com.booking.bookingservice.client.FlightView;
 import com.booking.bookingservice.client.PassengerClient;
 import com.booking.bookingservice.client.PassengerView;
+import com.booking.bookingservice.client.PaymentClient;
 import com.booking.bookingservice.entity.Booking;
+import com.booking.bookingservice.entity.BookingCancelAudit;
+import com.booking.bookingservice.event.BookingCancelledEvent;
 import com.booking.bookingservice.event.BookingCreatedEvent;
 import com.booking.bookingservice.service.SeatLockService;
 import io.quarkus.security.Authenticated;
@@ -41,10 +44,20 @@ import java.util.Set;
 @Authenticated
 public class BookingResource {
     private static final Set<String> BOOKABLE_FLIGHT_STATUSES = Set.of("SCHEDULED");
+    private static final String STATUS_PENDING_PAYMENT = "PENDING_PAYMENT";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
+    private static final String STATUS_CANCELLED = "CANCELLED";
+    private static final String STATUS_EXPIRED = "EXPIRED";
     private record CreatedBooking(Booking booking, FlightView flight) {}
+    public static class AdminCancelRequest {
+        public String cancelReason;
+    }
+
     @Inject @RestClient FlightClient flightClient;
     @Inject @RestClient PassengerClient passengerClient;
+    @Inject @RestClient PaymentClient paymentClient;
     @Inject @Channel("booking-created-out") Emitter<BookingCreatedEvent> emitter;
+    @Inject @Channel("booking-cancelled-out") Emitter<BookingCancelledEvent> cancelEmitter;
     @Inject SeatLockService seatLockService;
     @Inject JsonWebToken jwt;
 
@@ -191,7 +204,7 @@ public class BookingResource {
         }
         b.userId = currentUserId();
         b.seatNumber = b.seatNumber.trim().toUpperCase();
-        b.status="PENDING_PAYMENT";
+        b.status = STATUS_PENDING_PAYMENT;
         b.persist();
         return new CreatedBooking(b, flight);
         } catch (RuntimeException ex) {
@@ -214,19 +227,85 @@ public class BookingResource {
     public Booking cancel(@PathParam("id") Long id, @Context HttpHeaders headers) {
         Booking booking = Booking.findById(id);
         assertOwnership(booking);
-        if ("CONFIRMED".equalsIgnoreCase(booking.status)) {
+        if (isAdmin()) {
+            throw new WebApplicationException("Admin must use /api/bookings/{id}/admin-cancel", 400);
+        }
+        if (STATUS_CONFIRMED.equalsIgnoreCase(booking.status)) {
             throw new WebApplicationException("Confirmed booking cannot be cancelled here", 409);
         }
-        if ("CANCELLED".equalsIgnoreCase(booking.status) || "EXPIRED".equalsIgnoreCase(booking.status)) {
+        if (STATUS_CANCELLED.equalsIgnoreCase(booking.status) || STATUS_EXPIRED.equalsIgnoreCase(booking.status)) {
             return booking;
         }
+        String oldStatus = booking.status;
         String authorization = headers.getHeaderString("Authorization");
         try {
             flightClient.releaseSeat(booking.flightId, booking.seatNumber, authorization);
         } catch (Exception ignored) {
         }
-        booking.status = "CANCELLED";
+        expirePendingPayment(booking.id);
+        booking.status = STATUS_CANCELLED;
+        emitCancelledEvent(booking, oldStatus, "user_cancel", null);
         return booking;
+    }
+
+    @PUT
+    @Path("/{id}/admin-cancel")
+    @Transactional
+    @RolesAllowed("ADMIN")
+    public Booking adminCancel(@PathParam("id") Long id, AdminCancelRequest req, @Context HttpHeaders headers) {
+        Booking booking = Booking.findById(id);
+        assertOwnership(booking);
+        if (STATUS_CANCELLED.equalsIgnoreCase(booking.status)) {
+            return booking;
+        }
+        if (STATUS_EXPIRED.equalsIgnoreCase(booking.status)) {
+            return booking;
+        }
+        if (!STATUS_PENDING_PAYMENT.equalsIgnoreCase(booking.status)) {
+            throw new WebApplicationException("Only PENDING_PAYMENT booking can be cancelled by admin", 409);
+        }
+        String reason = req == null || req.cancelReason == null ? "" : req.cancelReason.trim();
+        if (reason.length() < 5) {
+            throw new WebApplicationException("cancelReason is required and must be at least 5 characters", 400);
+        }
+        String oldStatus = booking.status;
+        String authorization = headers.getHeaderString("Authorization");
+        try {
+            flightClient.releaseSeat(booking.flightId, booking.seatNumber, authorization);
+        } catch (Exception ignored) {
+        }
+        expirePendingPayment(booking.id);
+        booking.status = STATUS_CANCELLED;
+        BookingCancelAudit audit = new BookingCancelAudit();
+        audit.bookingId = booking.id;
+        audit.adminId = currentUserId();
+        audit.oldStatus = oldStatus;
+        audit.newStatus = STATUS_CANCELLED;
+        audit.reason = reason;
+        audit.persist();
+        emitCancelledEvent(booking, oldStatus, reason, audit.adminId);
+        return booking;
+    }
+
+    private void expirePendingPayment(Long bookingId) {
+        try {
+            paymentClient.expirePaymentByBooking(bookingId);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void emitCancelledEvent(Booking booking, String oldStatus, String reason, Long adminId) {
+        BookingCancelledEvent event = new BookingCancelledEvent();
+        event.bookingId = booking.id;
+        event.userId = booking.userId;
+        event.passengerId = booking.passengerId;
+        event.flightId = booking.flightId;
+        event.seatNumber = booking.seatNumber;
+        event.oldStatus = oldStatus;
+        event.status = booking.status;
+        event.reason = reason;
+        event.cancelledByAdminId = adminId;
+        cancelEmitter.send(event);
     }
 
     private long currentUserId() {

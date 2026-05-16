@@ -29,7 +29,7 @@ export default function AdminPassengersPage() {
   const deleteMut = useMutation({
     mutationFn: passengerApi.deletePassenger,
     onSuccess: () => {
-      toast.success('Đã xóa hành khách (xóa mềm)!');
+      toast.success('Đã xóa hành khách!');
       setDeleteId(null);
       qc.invalidateQueries({ queryKey: ['adminPassengers'] });
     },

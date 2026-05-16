@@ -14,7 +14,7 @@ const statusMap: Record<string, string> = {
   HELD: 'bg-amber-100 text-amber-700',
   BOOKED: 'bg-rose-100 text-rose-700',
   FAILED: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]',
-  CANCELLED: 'bg-gray-100 text-gray-600',
+  CANCELLED: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]',
   EXPIRED: 'bg-gray-100 text-gray-600',
   SCHEDULED: 'bg-[var(--color-info-soft)] text-[var(--color-info)]',
 };

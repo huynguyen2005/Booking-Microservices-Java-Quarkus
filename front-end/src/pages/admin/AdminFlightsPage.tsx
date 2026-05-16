@@ -8,7 +8,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { DataTable, Column } from '../../components/ui/DataTable';
 import { TableSkeleton } from '../../components/ui/LoadingSkeleton';
 import { toast } from '../../components/ui/Toast';
-import { ImageIcon, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { ImageIcon, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 
 export default function AdminFlightsPage() {
   const qc = useQueryClient();

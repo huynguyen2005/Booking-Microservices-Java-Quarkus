@@ -264,6 +264,8 @@ export const bookingApi = {
   createBooking: (data: { passengerId: number; flightId: number; seatNumber: string }) =>
     http.post<Booking>('/api/bookings', data).then(r => r.data),
   cancelBooking: (id: number) => http.put<Booking>(`/api/bookings/${id}/cancel`).then(r => r.data),
+  adminCancelBooking: (id: number, cancelReason: string) =>
+    http.put<Booking>(`/api/bookings/${id}/admin-cancel`, { cancelReason }).then(r => r.data),
 };
 
 export const paymentApi = {
