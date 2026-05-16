@@ -168,6 +168,8 @@ docker compose down -v
 kubectl apply -f k8s/namespace.yml
 kubectl apply -f k8s/postgres.yml
 kubectl apply -f k8s/rabbitmq.yml
+kubectl apply -f k8s/redis.yml
+kubectl apply -f k8s/elasticsearch.yml
 kubectl apply -f k8s/cloudinary-secret.yml
 kubectl apply -f k8s/api-gateway.yml
 kubectl apply -f k8s/flight-service.yml

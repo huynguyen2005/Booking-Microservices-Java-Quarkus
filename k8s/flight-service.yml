@@ -28,6 +28,10 @@ spec:
               value: postgres
             - name: RABBITMQ_HOST
               value: rabbitmq
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: ES_URL
+              value: elasticsearch:9200
             - name: CLOUDINARY_CLOUD_NAME
               valueFrom:
                 secretKeyRef:
